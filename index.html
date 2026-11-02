@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CPTA Commitment Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://qkedzkejcxurlbvgrejn.supabase.co" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap"></noscript>
+<style>
+:root{
+  --bg:#f6f3ec; --surface:#fffdf8; --surface-2:#f0ebe0; --line:#e1d9c8; --line-strong:#cbbfa7;
+  --ink:#1f2a2e; --ink-2:#4b5559; --ink-3:#7b8487;
+  --accent:#1f6f6b; --accent-ink:#ffffff; --accent-soft:#dcece9;
+  --s-committed:#9aa3a6; --s-reached:#c98a2b; --s-responded:#3f7fbf; --s-motion:#7a5cc4; --s-realized:#2e8b57; --s-stalled:#b5523b; --s-declined:#6f6f6f;
+  --firm:#2e8b57; --cond:#c98a2b; --expl:#7a5cc4;
+  --danger:#b5523b; --shadow:0 1px 2px rgba(31,42,46,.06),0 4px 14px rgba(31,42,46,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151a1c; --surface:#1d2427; --surface-2:#252e31; --line:#323c40; --line-strong:#46525a;
+    --ink:#ece8df; --ink-2:#b9bdb8; --ink-3:#8b928f;
+    --accent:#5fb3ab; --accent-ink:#0f1617; --accent-soft:#22393a;
+    --s-committed:#7f898c; --s-reached:#e0a648; --s-responded:#6aa6e0; --s-motion:#a58be6; --s-realized:#5cc08a; --s-stalled:#e07a62; --s-declined:#8d8d8d;
+    --firm:#5cc08a; --cond:#e0a648; --expl:#a58be6; --danger:#e07a62;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151a1c; --surface:#1d2427; --surface-2:#252e31; --line:#323c40; --line-strong:#46525a;
+  --ink:#ece8df; --ink-2:#b9bdb8; --ink-3:#8b928f;
+  --accent:#5fb3ab; --accent-ink:#0f1617; --accent-soft:#22393a;
+  --s-committed:#7f898c; --s-reached:#e0a648; --s-responded:#6aa6e0; --s-motion:#a58be6; --s-realized:#5cc08a; --s-stalled:#e07a62; --s-declined:#8d8d8d;
+  --firm:#5cc08a; --cond:#e0a648; --expl:#a58be6; --danger:#e07a62;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:650;letter-spacing:-.01em;margin:0}
+h1{font-size:22px} h2{font-size:20px} h3{font-size:16px}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+.loading{display:grid;gap:12px;padding-top:8px}
+.sk{height:64px;border-radius:12px;background:linear-gradient(90deg,var(--surface-2),var(--surface),var(--surface-2));background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.muted{color:var(--ink-3)} .small{font-size:13px} .tiny{font-size:12px}
+/* top bar */
+header{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{max-width:1280px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1.15}
+.brand .sub{font-size:12px;color:var(--ink-3)}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+nav a{padding:6px 12px;border-radius:999px;text-decoration:none;color:var(--ink-2);font-weight:500;font-size:14px}
+nav a.on{background:var(--accent-soft);color:var(--ink)}
+.userbox{display:flex;gap:8px;align-items:center}
+main{max-width:1280px;margin:0 auto;padding:20px 16px 80px}
+/* controls */
+.btn{border:1px solid var(--line-strong);background:var(--surface);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:4px 9px;font-size:13px}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface)}
+textarea{min-height:70px;resize:vertical}
+label.f{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 160px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btns .push{margin-left:auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.pad{padding:16px}
+.section{margin-top:28px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.st-committed{--c:var(--s-committed)} .st-reached_out{--c:var(--s-reached)} .st-responded{--c:var(--s-responded)} .st-in_progress{--c:var(--s-motion)} .st-realized{--c:var(--s-realized)} .st-stalled{--c:var(--s-stalled)} .st-declined{--c:var(--s-declined)}
+.str-firm{--c:var(--firm)} .str-conditional{--c:var(--cond)} .str-exploratory{--c:var(--expl)}
+.dot.c{background:var(--c)}
+.chip.strength{border-color:transparent;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--ink)}
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{padding:14px 16px}
+.kpi .n{font-family:Fraunces,Georgia,serif;font-size:30px;font-weight:650;line-height:1.1}
+.kpi .l{font-size:13px;color:var(--ink-2)}
+/* asks */
+.ask{display:grid;grid-template-columns:minmax(180px,1.2fr) 2fr auto;gap:16px;align-items:center;padding:14px 16px;border-top:1px solid var(--line);cursor:pointer}
+.ask:first-child{border-top:none}
+.ask:hover{background:var(--surface-2)}
+.ask .t{font-weight:600}
+.ask .d{font-size:13px;color:var(--ink-3)}
+.stack{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--surface-2)}
+.stack span{display:block;height:100%;background:var(--c)}
+.ask .counts{font-size:13px;color:var(--ink-2);text-align:right;white-space:nowrap}
+.ask .counts b{font-family:Fraunces,Georgia,serif;font-size:20px;color:var(--ink)}
+.gap-flag{color:var(--danger);font-weight:600}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:10px 16px;border-top:1px solid var(--line)}
+.li:first-child{border-top:none}
+.li.click{cursor:pointer}.li.click:hover{background:var(--surface-2)}
+.li .grow{flex:1;min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* board */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar select,.toolbar input{width:auto;min-width:130px}
+.toolbar input[type=text]{min-width:200px}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(195px,1fr);gap:12px;overflow-x:auto;padding-bottom:12px}
+.col{background:var(--surface-2);border-radius:12px;padding:8px;min-height:200px;display:flex;flex-direction:column;gap:8px}
+.col.over{outline:2px dashed var(--accent);outline-offset:-2px}
+.col-h{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;padding:4px 6px}
+.col-h .n{margin-left:auto;color:var(--ink-3);font-weight:500}
+.cc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 11px;cursor:pointer;box-shadow:var(--shadow)}
+.cc:hover{border-color:var(--line-strong)}
+.cc .who{font-weight:600;font-size:13px}
+.cc .org{font-size:12px;color:var(--ink-3)}
+.cc .txt{font-size:13.5px;margin:6px 0}
+.cc .meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.cc .chip{white-space:normal}
+.cc.dragging{opacity:.5}
+.owner{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);font-size:11px;font-weight:600;margin-left:auto}
+.overdue{color:var(--danger);font-weight:600}
+.cc-top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.cc .owner{margin-left:0;flex:none}
+.cc .next{font-size:12.5px;font-weight:600;margin:6px 0 2px;color:var(--ink)}
+.clist{list-style:none;margin:6px 0 8px;padding:0;display:flex;flex-direction:column;gap:4px}
+.clist li{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;line-height:1.35;color:var(--ink-2)}
+.clist li .dot{margin-top:4px}
+.clist li span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.clist .done{text-decoration:line-through;color:var(--ink-3)} .clist .struck{text-decoration:line-through;color:var(--ink-3)}
+.chip.unassigned{background:color-mix(in srgb,var(--danger) 14%,transparent);border-color:transparent;color:var(--danger);font-weight:600}
+.st-realized.chip .dot,.st-stalled .dot{} 
+.fu-panel h3{margin-bottom:2px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink-2)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.tgrid{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:20px;align-items:start}
+.tgrid.single{grid-template-columns:minmax(0,760px)}
+.tcol-h{display:flex;align-items:center;gap:10px}
+.tcol-h .owner{width:30px;height:30px;font-size:12px;margin:0}
+.tstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:12px 0 4px}
+.tstats>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column}
+.tstats b{font-family:Fraunces,Georgia,serif;font-size:22px;line-height:1.1}
+.tstats span{font-size:12px;color:var(--ink-2)}
+.tg-h{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin:16px 0 6px}
+@media (max-width:900px){.tgrid{grid-template-columns:1fr}}
+/* people */
+.ptable{width:100%;border-collapse:collapse}
+.ptable th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+.ptable td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.ptable tr.click{cursor:pointer}.ptable tr.click:hover td{background:var(--surface-2)}
+.mini{display:flex;gap:3px;flex-wrap:wrap;max-width:160px}
+.mini i{width:10px;height:10px;border-radius:3px;background:var(--c);display:block}
+.person-head{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.pc{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.pc:first-child{border-top:none}
+.pc .grow{flex:1;min-width:0;cursor:pointer}
+.pc select{width:auto}
+.timeline .li{padding:10px 16px}
+.tl-kind{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)}
+/* big sur */
+.countdown{display:flex;align-items:baseline;gap:10px}
+.countdown .n{font-family:Fraunces,Georgia,serif;font-size:48px;font-weight:650;line-height:1}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(15,20,22,.45);z-index:50;display:flex;justify-content:flex-end}
+.drawer{background:var(--surface);width:min(560px,100%);height:100%;overflow-y:auto;padding:20px;box-shadow:-8px 0 30px rgba(0,0,0,.2)}
+.drawer-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{display:inline-flex;gap:6px;align-items:center;padding:5px 10px;border:1px solid var(--line-strong);border-radius:999px;font-size:13px;cursor:pointer}
+.checks input{margin:0}
+.hr{height:1px;background:var(--line);margin:18px 0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;box-shadow:var(--shadow)}
+.err{color:var(--danger);font-size:13px;margin-top:8px}
+details.bio{max-width:680px;margin-top:8px}
+details.group{margin:8px 0}
+ol.steps{padding-left:22px;margin:8px 0}
+ol.steps li{margin:10px 0}
+.tplpick label{font-size:13px}
+.docprev{border:1px solid var(--line);border-radius:8px;padding:4px 16px;background:var(--surface);font-size:14px}
+.docprev h1{font-size:18px;margin:12px 0}.docprev h2{font-size:16px;margin:14px 0 6px}.docprev hr{border:none;border-top:1px dashed var(--line-strong);margin:16px 0}
+details.group>summary{cursor:pointer;padding:8px 2px;list-style-position:inside}
+details.group>.card{margin-top:6px}
+details.bio summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.bio p{margin:8px 0}
+pre.draft{white-space:pre-wrap;background:var(--surface-2);padding:12px;border-radius:8px;font:13px/1.5 Inter,system-ui,sans-serif;max-height:320px;overflow:auto}
+@media (max-width:760px){
+  .ask{grid-template-columns:1fr;gap:8px}
+  .ask .counts{text-align:left}
+  .two{grid-template-columns:1fr}
+  nav{margin-left:0;width:100%}
+  .hide-sm{display:none}
+  .ptable th.hide-sm,.ptable td.hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+<div id="appView">
+  <header>
+    <div class="bar">
+      <div class="brand"><h1>Commitment Ledger</h1><span class="sub" id="wsName">CPTA</span></div>
+      <nav id="nav">
+        <a href="#ledger" data-r="ledger">Ledger</a>
+        <a href="#team" data-r="team">Who’s doing what</a>
+        <a href="#board" data-r="board">Board</a>
+        <a href="#people" data-r="people">People</a>
+        <a href="#bigsur" data-r="bigsur">Big Sur</a>
+        <a href="#members" data-r="members">Members</a>
+      </nav>
+      <div class="userbox">
+        <button class="btn ghost sm" id="refreshBtn" title="Reload data">↻</button>
+        <button class="btn ghost sm" id="themeBtn" title="Toggle light/dark" aria-label="Toggle light/dark"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="display:block"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+        <label class="small muted" for="meSel">I’m</label><select id="meSel" style="width:auto;padding:5px 8px"></select>
+      </div>
+    </div>
+  </header>
+  <main id="main"><div class="loading"><div class="sk"></div><div class="sk"></div><div class="sk"></div><p class="small muted">Loading the ledger…</p></div></main>
+</div>
+<div id="modalRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" crossorigin></script>
+<script>
+/* ===== Config ===== */
+const SUPABASE_URL = 'https://qkedzkejcxurlbvgrejn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_A19b81BUorSUGg4mk3Rueg_2R9ld5PI';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const STATUSES = [
+  {k:'committed', l:'Committed'},
+  {k:'reached_out', l:'Reached out'},
+  {k:'responded', l:'Responded'},
+  {k:'in_progress', l:'In motion'},
+  {k:'realized', l:'Realized'},
+  {k:'stalled', l:'Stalled'},
+  {k:'declined', l:'Declined'}
+];
+const STATUS_L = Object.fromEntries(STATUSES.map(s=>[s.k,s.l]));
+const IN_MOTION = ['reached_out','responded','in_progress'];
+const STRENGTH_L = {firm:'Firm', conditional:'Conditional', exploratory:'Exploratory'};
+const DIRECTION_L = {to_us:'To us', from_us:'From us', between_others:'Between others'};
+const KIND_L = {email:'Email', call:'Call', meeting:'Meeting', message:'Message', note:'Note', event:'Event'};
+const FLOW_L = {outbound:'We reached out', inbound:'They reached out', internal:'Internal note'};
+const OUTCOME_L = {meeting_held:'Meeting held', introduction_made:'Introduction made', pilot_site:'Pilot site', funding:'Funding', attendance:'Attendance', council_seat:'Council seat', partnership:'Partnership', other:'Other'};
+
+/* ===== State ===== */
+const S = {user:null, ws:null, role:'member', members:[], events:[], asks:[], people:[], commits:[], cAsks:new Map(), interactions:[], outcomes:[]};
+const F = {owner:'', ask:'', strength:'', direction:'', q:''}; // board filters
+
+/* ===== Helpers ===== */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toLocaleDateString('en-CA');
+const fmtDate = d => d ? new Date(d + (d.length===10?'T12:00:00':'')).toLocaleDateString(undefined,{month:'short',day:'numeric',year: d.slice(0,4)!==String(new Date().getFullYear())?'numeric':undefined}) : '';
+const person = id => S.people.find(p=>p.id===id);
+const ask = id => S.asks.find(a=>a.id===id);
+const member = email => S.members.find(m=>m.email.toLowerCase()===String(email||'').toLowerCase());
+const initials = email => { const m = member(email); const n = (m?.name || email || '?'); return n.split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join(''); };
+const ownerName = email => member(email)?.name || email || 'Unassigned';
+const asksOf = cid => [...(S.cAsks.get(cid)||[])].map(ask).filter(Boolean).sort((a,b)=>a.sort-b.sort);
+const commitsOf = pid => S.commits.filter(c=>c.person_id===pid).sort((a,b)=>a.sort-b.sort);
+const STAGE_ORDER = ['committed','reached_out','responded','in_progress'];
+const STAGE_L = {committed:'To contact', reached_out:'Reached out', responded:'Responded', in_progress:'In motion', realized:'Done', stalled:'Stalled'};
+// A person's follow-up stage = the furthest stage among their open commitments
+function stageOf(pid){
+  const cs = commitsOf(pid); if(!cs.length) return null;
+  const open = cs.filter(c=>STAGE_ORDER.includes(c.status));
+  if(open.length) return open.map(c=>c.status).sort((a,b)=>STAGE_ORDER.indexOf(b)-STAGE_ORDER.indexOf(a))[0];
+  return cs.some(c=>c.status==='realized') ? 'realized' : 'stalled';
+}
+const followPeople = () => S.people.filter(p=>commitsOf(p.id).length);
+const isOverdueP = p => p.due_date && p.due_date < today() && !['realized','stalled'].includes(stageOf(p.id));
+const stageChip = st => st ? `<span class="chip st-${st}"><span class="dot c"></span>${esc(STAGE_L[st])}</span>` : '';
+const ownerChip = email => email ? `<span class="owner" title="${esc(ownerName(email))}">${esc(initials(email))}</span>` : `<span class="chip unassigned">Unassigned</span>`;
+const lastTouch = pid => S.interactions.filter(i=>i.person_id===pid).map(i=>i.occurred_on).sort().pop();
+function toast(msg){ document.querySelectorAll('.toast').forEach(x=>x.remove()); const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+function fail(e){ console.error(e); toast('Something went wrong: ' + (e?.message || e)); }
+const statusChip = s => `<span class="chip st-${s}"><span class="dot c"></span>${esc(STATUS_L[s])}</span>`;
+const strengthChip = s => `<span class="chip strength str-${s}">${esc(STRENGTH_L[s])}</span>`;
+const askChips = cid => asksOf(cid).map(a=>`<span class="chip">${esc(a.label)}</span>`).join('');
+
+/* ===== Theme ===== */
+(function(){ try{ const t=localStorage.getItem('ct_theme'); if(t) document.documentElement.dataset.theme=t; }catch(e){} })();
+$('#themeBtn').onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light');
+  const next = cur==='dark'?'light':'dark';
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem('ct_theme', next); }catch(e){}
+};
+
+/* ===== Identity (no login: pick who you are) ===== */
+const WORKSPACE_ID = '003d04a8-7853-44ce-a4af-942b099a1c27';
+let ME_EMAIL = '';
+try{ ME_EMAIL = localStorage.getItem('ct_me') || ''; }catch(e){}
+const ME = () => ME_EMAIL || null;
+function renderMe(){
+  const el = $('#meSel');
+  el.innerHTML = S.members.map(m=>`<option value="${esc(m.email)}" ${m.email===ME_EMAIL?'selected':''}>${esc(m.name||m.email)}</option>`).join('');
+  el.onchange = () => { ME_EMAIL = el.value; try{ localStorage.setItem('ct_me', ME_EMAIL); }catch(e){} toast(`Logging as ${ownerName(ME_EMAIL)}`); };
+}
+$('#refreshBtn').onclick = async () => { if(await loadAll()){ renderMe(); route(); toast('Up to date'); } };
+
+async function boot(){
+  const ok = await loadAll(true);
+  if(!ok){ $('#main').innerHTML = `<p class="err">Couldn’t load the ledger. Check your connection and use ↻ to retry.</p>`; return; }
+  $('#wsName').textContent = S.ws?.name || 'CPTA';
+  if(!member(ME_EMAIL)) ME_EMAIL = S.members[0]?.email || '';
+  renderMe();
+  route();
+  loadBios();   // bios arrive in the background; only needed for person pages and bio search
+}
+
+// --- 3: lists load lean; bios come separately ---
+const PEOPLE_COLS = 'id,workspace_id,name,org,title,email,geography,met_at_event,introduced_by,notes,sector,ncc_visits,owner_email,next_action,due_date,created_at,updated_at';
+async function loadAll(withWs){
+  const w = WORKSPACE_ID;
+  const q = (t, cols='*') => sb.from(t).select(cols).eq('workspace_id', w);
+  const reqs = [q('ct_members'),q('ct_events'),q('ct_asks'),q('ct_people',PEOPLE_COLS),q('ct_commitments'),q('ct_commitment_asks'),q('ct_interactions'),q('ct_outcomes')];
+  if(withWs || !S.ws) reqs.push(sb.from('ct_workspaces').select('*').eq('id', w).single());
+  const res = await Promise.all(reqs);
+  for(const r of res) if(r.error){ fail(r.error); return false; }
+  const [m,e,a,p,c,ca,i,o,ws] = res;
+  if(ws) S.ws = ws.data;
+  const bios = new Map((S.people||[]).filter(x=>x.bio!==undefined).map(x=>[x.id,x.bio]));
+  S.members=m.data; S.events=e.data; S.asks=a.data.sort((x,y)=>x.sort-y.sort);
+  S.people=p.data.map(x=>bios.has(x.id)?{...x, bio:bios.get(x.id)}:x); S.commits=c.data;
+  S.cAsks = new Map(); for(const r of ca.data){ if(!S.cAsks.has(r.commitment_id)) S.cAsks.set(r.commitment_id,new Set()); S.cAsks.get(r.commitment_id).add(r.ask_id); }
+  S.interactions = i.data.sort((x,y)=> (y.occurred_on+y.created_at).localeCompare(x.occurred_on+x.created_at));
+  S.outcomes = o.data.sort((x,y)=> (y.occurred_on+y.created_at).localeCompare(x.occurred_on+x.created_at));
+  return true;
+}
+let biosLoaded = false;
+async function loadBios(){
+  const {data, error} = await sb.from('ct_people').select('id,bio').eq('workspace_id', WORKSPACE_ID);
+  if(error) return;
+  const m = new Map(data.map(x=>[x.id,x.bio]));
+  S.people.forEach(p=>{ if(m.has(p.id)) p.bio = m.get(p.id); });
+  biosLoaded = true;
+  const r = location.hash.slice(1).split('/')[0];
+  if(r==='person' || (r==='people' && PF.q)) route();   // refresh views that show or search bios
+}
+let lastFocusLoad = Date.now();
+window.addEventListener('focus', async () => {
+  if(!S.ws || Date.now()-lastFocusLoad < 60000 || $('#modalRoot').innerHTML) return;
+  lastFocusLoad = Date.now(); await loadAll(); route();
+});
+
+/* ===== Writes ===== */
+async function updateCommit(id, patch){
+  const {data, error} = await sb.from('ct_commitments').update(patch).eq('id', id).select().single();
+  if(error) { fail(error); return null; }
+  const i = S.commits.findIndex(c=>c.id===id); S.commits[i] = data; return data;
+}
+async function updateCommits(ids, patch){
+  if(!ids.length) return 0;
+  const {data, error} = await sb.from('ct_commitments').update(patch).in('id', ids).select();
+  if(error){ fail(error); return 0; }
+  for(const row of data){ const k = S.commits.findIndex(c=>c.id===row.id); if(k>-1) S.commits[k] = row; }
+  return data.length;
+}
+async function updatePerson(id, patch){
+  const {data, error} = await sb.from('ct_people').update(patch).eq('id', id).select().single();
+  if(error){ fail(error); return null; }
+  S.people[S.people.findIndex(p=>p.id===id)] = data; return data;
+}
+// Move a person to a stage: applies to their open commitments (or, if none are open, all but declined)
+async function setStage(pid, target){
+  const cs = commitsOf(pid);
+  let targets = cs.filter(c=>STAGE_ORDER.includes(c.status));
+  if(!targets.length) targets = cs.filter(c=>c.status!=='declined');
+  return updateCommits(targets.filter(c=>c.status!==target).map(c=>c.id), {status:target});
+}
+async function setCommitAsks(id, askIds){
+  const {error:e1} = await sb.from('ct_commitment_asks').delete().eq('commitment_id', id);
+  if(e1) return fail(e1);
+  if(askIds.length){
+    const {error:e2} = await sb.from('ct_commitment_asks').insert(askIds.map(a=>({commitment_id:id, ask_id:a, workspace_id:S.ws.id})));
+    if(e2) return fail(e2);
+  }
+  S.cAsks.set(id, new Set(askIds));
+}
+async function insert(table, row){
+  const {data, error} = await sb.from(table).insert({...row, workspace_id:S.ws.id}).select().single();
+  if(error){ fail(error); return null; }
+  return data;
+}
+
+/* ===== Router ===== */
+window.addEventListener('hashchange', route);
+function route(){
+  if(!S.ws) return;
+  const [r, arg] = (location.hash.slice(1) || 'ledger').split('/');
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.r===r || (r==='person' && a.dataset.r==='people')));
+  const views = {ledger:renderLedger, team:renderTeam, board:renderBoard, people:renderPeople, person:()=>renderPerson(arg), bigsur:renderBigSur, members:renderMembers};
+  (views[r] || renderLedger)();
+}
+
+/* ===== Ledger ===== */
+function renderLedger(){
+  const counted = S.commits.filter(c=>c.direction!=='between_others');
+  const n = counted.length;
+  const realized = counted.filter(c=>c.status==='realized').length;
+  const motion = counted.filter(c=>IN_MOTION.includes(c.status)).length;
+  const untouched = counted.filter(c=>c.status==='committed').length;
+  const parked = counted.filter(c=>['stalled','declined'].includes(c.status)).length;
+  const committers = new Set(counted.map(c=>c.person_id)).size;
+  const introduced = S.people.filter(p=>p.introduced_by).length;
+  const pct = n ? Math.round(realized/n*100) : 0;
+
+  const askRows = S.asks.map(a=>{
+    const cs = counted.filter(c=>S.cAsks.get(c.id)?.has(a.id));
+    return askRow(a.label, a.description, cs, `ask=${a.id}`, a.code==='donors');
+  }).join('');
+  const beyond = counted.filter(c=>!(S.cAsks.get(c.id)?.size));
+  const beyondRow = beyond.length ? askRow('Beyond the asks', 'Offers that don’t map to one of the five asks', beyond, 'ask=none', false) : '';
+
+  const open = followPeople().filter(p=>!['realized','stalled'].includes(stageOf(p.id)));
+  const unowned = open.filter(p=>!p.owner_email).length;
+  const urgent = open.filter(p=>p.owner_email && p.due_date && p.due_date <= addDays(today(),7)).sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.name.localeCompare(b.name)).slice(0,8);
+
+  const activity = [
+    ...S.interactions.map(i=>({d:i.occurred_on, c:i.created_at, html:`<span class="tl-kind">${esc(KIND_L[i.kind])}</span> · <a href="#person/${i.person_id}">${esc(person(i.person_id)?.name)}</a><div class="small">${esc(i.summary)}</div>`})),
+    ...S.outcomes.map(o=>({d:o.occurred_on, c:o.created_at, html:`<span class="tl-kind" style="color:var(--s-realized)">Outcome · ${esc(OUTCOME_L[o.kind])}</span> · <a href="#person/${o.person_id}">${esc(person(o.person_id)?.name||'')}</a><div class="small">${esc(o.description)}</div>`}))
+  ].sort((a,b)=>(b.d+b.c).localeCompare(a.d+a.c)).slice(0,8);
+
+  $('#main').innerHTML = `
+    <div class="kpis">
+      <div class="card kpi"><div class="n">${n}</div><div class="l">commitments from ${committers} people</div></div>
+      <div class="card kpi"><div class="n">${pct}%</div><div class="l">promises kept (${realized} realized)</div></div>
+      <div class="card kpi"><div class="n">${motion}</div><div class="l">in motion</div></div>
+      <div class="card kpi"><div class="n">${untouched}</div><div class="l">not yet followed up</div></div>
+      <div class="card kpi"><div class="n">${introduced}</div><div class="l">people introduced to us</div></div>
+      ${parked?`<div class="card kpi"><div class="n">${parked}</div><div class="l">stalled or declined</div></div>`:''}
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>The five asks</h2>
+        <div class="legend">${STATUSES.map(s=>`<span class="st-${s.k}"><i class="dot c"></i>${s.l}</span>`).join('')}</div>
+      </div>
+      <div class="card">${askRows}${beyondRow}</div>
+      <p class="tiny muted">A commitment can count toward more than one ask. Click an ask to see its commitments on the board.</p>
+    </div>
+
+    <div class="section two">
+      <div>
+        <div class="section-head"><h3>Needs attention</h3>${unowned?`<a class="small" href="#board" onclick="Object.assign(F,{owner:'__none',ask:'',strength:'',direction:'',q:''})">${unowned} without an owner →</a>`:''}</div>
+        <div class="card list">${urgent.length ? urgent.map(p=>`
+          <div class="li click" onclick="openPersonCard('${p.id}')">
+            <div class="grow"><div class="small"><b>${esc(p.name)}</b>${p.next_action?' · '+esc(p.next_action):''}</div>
+            <div class="tiny muted"><span class="${isOverdueP(p)?'overdue':''}">Due ${fmtDate(p.due_date)}</span> · ${esc(ownerName(p.owner_email))}</div></div>
+            ${stageChip(stageOf(p.id))}
+          </div>`).join('') : `<div class="li muted small">Nothing overdue or due this week.</div>`}
+        </div>
+      </div>
+      <div>
+        <div class="section-head"><h3>Recent activity</h3></div>
+        <div class="card list">${activity.length ? activity.map(a=>`<div class="li"><div class="grow small">${a.html}<div class="tiny muted">${fmtDate(a.d)}</div></div></div>`).join('') : '<div class="li muted small">No follow-ups logged yet. Open a person to log the first touch.</div>'}</div>
+      </div>
+    </div>`;
+}
+function askRow(label, desc, cs, filter, flagThin){
+  const total = cs.length;
+  const by = s => cs.filter(c=>c.status===s).length;
+  const firm = cs.filter(c=>c.strength==='firm').length;
+  const realized = by('realized');
+  const bar = total ? STATUSES.map(s=>{ const k=by(s.k); return k?`<span class="st-${s.k}" style="width:${k/total*100}%" title="${s.l}: ${k}"></span>`:''; }).join('') : '';
+  const thin = flagThin && firm <= 3;
+  return `<div class="ask" onclick="goBoardAsk('${filter.split('=')[1]}')">
+    <div><div class="t">${esc(label)}</div><div class="d">${esc(desc||'')}</div>${thin?`<div class="tiny gap-flag">Thin coverage — only ${firm} firm lead${firm===1?'':'s'}</div>`:''}</div>
+    <div><div class="stack">${bar}</div><div class="tiny muted" style="margin-top:4px">${firm} firm · ${cs.filter(c=>c.strength==='conditional').length} conditional · ${cs.filter(c=>c.strength==='exploratory').length} exploratory</div></div>
+    <div class="counts"><b>${realized}</b> / ${total} realized</div>
+  </div>`;
+}
+function goBoardAsk(a){ Object.assign(F,{ask:a, owner:'', strength:'', direction:'', q:''}); location.hash='board'; }
+function addDays(d,n){ const x=new Date(d+'T12:00:00'); x.setDate(x.getDate()+n); return x.toLocaleDateString('en-CA'); }
+
+/* ===== Board: one card per person ===== */
+const COLS = [
+  {k:'committed', l:'To contact'},
+  {k:'reached_out', l:'Reached out'},
+  {k:'responded', l:'Responded'},
+  {k:'in_progress', l:'In motion'},
+  {k:'realized', l:'Done'},
+  {k:'stalled', l:'Stalled'}
+];
+function filteredPeople(){
+  const q = F.q.toLowerCase();
+  return followPeople().filter(p=>{
+    const cs = commitsOf(p.id);
+    if(F.owner==='__none' ? p.owner_email : (F.owner && p.owner_email!==F.owner)) return false;
+    if(F.ask==='none' ? !cs.some(c=>!S.cAsks.get(c.id)?.size) : (F.ask && !cs.some(c=>S.cAsks.get(c.id)?.has(F.ask)))) return false;
+    if(F.strength && !cs.some(c=>c.strength===F.strength)) return false;
+    if(F.direction && !cs.some(c=>c.direction===F.direction)) return false;
+    if(q && !(`${p.name} ${p.org||''} ${p.next_action||''} ${cs.map(c=>c.text).join(' ')}`.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+function renderBoard(){
+  const ps = filteredPeople();
+  const opt = (v,l,cur) => `<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(l)}</option>`;
+  $('#main').innerHTML = `
+    <div class="section-head"><h2>Board</h2><div class="btns"><button class="btn" onclick="openBatchDrafts()">Batch emails</button><button class="btn primary" onclick="openNewCommit()">+ New commitment</button></div></div>
+    <div class="toolbar">
+      <input type="text" id="fq" placeholder="Search people, orgs, commitments" value="${esc(F.q)}">
+      <select id="fowner">${opt('','All owners',F.owner)}${opt('__none','Unassigned',F.owner)}${S.members.map(m=>opt(m.email,m.name||m.email,F.owner)).join('')}</select>
+      <select id="fask">${opt('','All asks',F.ask)}${S.asks.map(a=>opt(a.id,a.label,F.ask)).join('')}${opt('none','Beyond the asks',F.ask)}</select>
+      <select id="fstr">${opt('','Any strength',F.strength)}${Object.entries(STRENGTH_L).map(([k,l])=>opt(k,l,F.strength)).join('')}</select>
+      <select id="fdir">${opt('','Any direction',F.direction)}${Object.entries(DIRECTION_L).map(([k,l])=>opt(k,l,F.direction)).join('')}</select>
+      ${(F.q||F.owner||F.ask||F.strength||F.direction)?`<button class="btn ghost sm" id="fclear">Clear</button>`:''}
+      <span class="small muted" style="margin-left:auto">${ps.length} of ${followPeople().length} people</span>
+    </div>
+    <div class="board">${COLS.map(col=>{
+      const items = ps.filter(p=>stageOf(p.id)===col.k).sort((a,b)=>(a.due_date||'9').localeCompare(b.due_date||'9') || a.name.localeCompare(b.name));
+      return `<div class="col" data-col="${col.k}">
+        <div class="col-h st-${col.k}"><span class="dot c"></span>${col.l}<span class="n">${items.length}</span></div>
+        ${items.map(personCardHtml).join('')}
+      </div>`;}).join('')}
+    </div>
+    <p class="tiny muted">One card per person. Drag a card to move all of that person’s open commitments; click it to assign, set the next step, or update a single commitment.</p>`;
+  const reb = () => { const pos=$('#fq').selectionStart; renderBoard(); const el=$('#fq'); el.focus(); el.setSelectionRange(pos,pos); };
+  $('#fq').oninput = e => { F.q=e.target.value; reb(); };
+  $('#fowner').onchange = e => { F.owner=e.target.value; renderBoard(); };
+  $('#fask').onchange = e => { F.ask=e.target.value; renderBoard(); };
+  $('#fstr').onchange = e => { F.strength=e.target.value; renderBoard(); };
+  $('#fdir').onchange = e => { F.direction=e.target.value; renderBoard(); };
+  if($('#fclear')) $('#fclear').onclick = () => { Object.assign(F,{owner:'',ask:'',strength:'',direction:'',q:''}); renderBoard(); };
+  wireDnD();
+}
+function personCardHtml(p){
+  const cs = commitsOf(p.id);
+  const done = cs.filter(c=>c.status==='realized').length;
+  return `<div class="cc" draggable="true" data-id="${p.id}" onclick="openPersonCard('${p.id}')">
+    <div class="cc-top"><div><div class="who">${esc(p.name)}</div><div class="org">${esc(p.org||'')}</div></div>${ownerChip(p.owner_email)}</div>
+    ${p.next_action?`<div class="next">Next: ${esc(p.next_action)}</div>`:''}
+    <ul class="clist">${cs.map(c=>`<li class="st-${c.status}" title="${esc(STATUS_L[c.status])}"><i class="dot c"></i><span class="${c.status==='realized'?'done':c.status==='declined'?'struck':''}">${esc(c.text)}</span></li>`).join('')}</ul>
+    <div class="meta">
+      ${p.due_date?`<span class="tiny ${isOverdueP(p)?'overdue':'muted'}">Due ${fmtDate(p.due_date)}</span>`:''}
+      ${done?`<span class="tiny muted">${done}/${cs.length} done</span>`:''}
+    </div>
+  </div>`;
+}
+function wireDnD(){
+  document.querySelectorAll('.cc[draggable]').forEach(el=>{
+    el.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', el.dataset.id); el.classList.add('dragging'); });
+    el.addEventListener('dragend', ()=>el.classList.remove('dragging'));
+  });
+  document.querySelectorAll('.col').forEach(col=>{
+    col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('over'); });
+    col.addEventListener('dragleave', ()=>col.classList.remove('over'));
+    col.addEventListener('drop', async e=>{
+      e.preventDefault(); col.classList.remove('over');
+      const pid = e.dataTransfer.getData('text/plain'), p = person(pid), target = col.dataset.col;
+      if(!p || stageOf(pid)===target) return;
+      if(target==='realized' && !confirm(`Mark all of ${p.name}’s open commitments as done? To mark just one, click the card instead.`)) return;
+      const n = await setStage(pid, target);
+      renderBoard(); toast(`${p.name}: ${STAGE_L[target]}${n>1?` (${n} commitments)`:''}`);
+    });
+  });
+}
+
+/* ===== Who's doing what ===== */
+const TF = {view:'both'};
+function renderTeam(){
+  const cols = TF.view==='both' ? S.members.map(m=>m.email).concat(followPeople().some(p=>!p.owner_email)?['']:[]) : [TF.view];
+  const weekAgo = addDays(today(), -7);
+  const column = email => {
+    const ps = followPeople().filter(p=>(p.owner_email||'')===email);
+    const cs = ps.flatMap(p=>commitsOf(p.id));
+    const byStage = k => ps.filter(p=>stageOf(p.id)===k);
+    const overdue = ps.filter(isOverdueP).length;
+    const touches = S.interactions.filter(i=>email && i.logged_by===email && i.occurred_on>=weekAgo).length;
+    const done = cs.filter(c=>c.status==='realized').length;
+    const bar = ps.length ? Object.keys(STAGE_L).map(k=>{ const n=byStage(k).length; return n?`<span class="st-${k}" style="width:${n/ps.length*100}%" title="${STAGE_L[k]}: ${n}"></span>`:''; }).join('') : '';
+    const row = p => `<div class="li click" onclick="openPersonCard('${p.id}')"><div class="grow"><div class="small"><b>${esc(p.name)}</b> <span class="tiny muted">${esc(p.org||'')}</span></div>
+      <div class="tiny muted">${p.next_action?esc(p.next_action):'<i>No next step set</i>'}${p.due_date?` · <span class="${isOverdueP(p)?'overdue':''}">due ${fmtDate(p.due_date)}</span>`:''}</div></div>${stageChip(stageOf(p.id))}</div>`;
+    const sortDue = (a,b)=>(a.due_date||'9').localeCompare(b.due_date||'9') || a.name.localeCompare(b.name);
+    const group = (title, list) => list.length ? `<div class="tg-h">${title} <span class="muted">${list.length}</span></div><div class="card list">${list.sort(sortDue).map(row).join('')}</div>` : '';
+    const name = email ? ownerName(email) : 'Unassigned';
+    return `<div class="tcol">
+      <div class="tcol-h">${email?ownerChip(email):''}<h3>${esc(name)}</h3><span class="small muted" style="margin-left:auto">${ps.length} ${ps.length===1?'person':'people'}</span></div>
+      ${ps.length?`<div class="stack" style="margin:10px 0 6px">${bar}</div>
+      <div class="tiny muted">${Object.keys(STAGE_L).map(k=>byStage(k).length?`${byStage(k).length} ${STAGE_L[k].toLowerCase()}`:'').filter(Boolean).join(' · ')}</div>
+      <div class="tstats">
+        <div><b>${ps.length-byStage('committed').length}</b><span>of ${ps.length} contacted</span></div>
+        <div><b>${done}</b><span>of ${cs.length} commitments done</span></div>
+        ${email?`<div><b>${touches}</b><span>touches logged this week</span></div>`:''}
+        <div><b class="${overdue?'overdue':''}">${overdue}</b><span>overdue</span></div>
+      </div>
+      ${group('To contact', byStage('committed'))}
+      ${group('In conversation', ps.filter(p=>['reached_out','responded','in_progress'].includes(stageOf(p.id))))}
+      ${group('Done', byStage('realized'))}
+      ${group('Stalled', byStage('stalled'))}`
+      : `<div class="card pad small muted">${email?'No one assigned yet.':'Everyone is assigned.'}</div>`}
+    </div>`;
+  };
+  $('#main').innerHTML = `
+    <div class="section-head"><h2>Who’s doing what</h2>
+      <div class="seg">${[['both','Side by side']].concat(S.members.map(m=>[m.email, (m.name||m.email).split(' ')[0]])).map(([k,l])=>`<button class="${TF.view===k?'on':''}" data-v="${esc(k)}">${esc(l)}</button>`).join('')}</div>
+    </div>
+    <div class="tgrid ${TF.view==='both'?'':'single'}" style="--n:${cols.length}">${cols.map(column).join('')}</div>`;
+  document.querySelectorAll('.seg button').forEach(b=>b.onclick = () => { TF.view = b.dataset.v; renderTeam(); });
+}
+
+/* ===== Person card (drawer) ===== */
+function followupFields(p){
+  const st = stageOf(p.id);
+  return `<div class="row">
+      <div><label class="f" for="fuown">Assigned to</label>${ownerSelect('fuown', p.owner_email)}</div>
+      ${st?`<div><label class="f" for="fustage">Stage</label><select id="fustage">${COLS.map(c=>`<option value="${c.k}" ${c.k===st?'selected':''}>${c.l}</option>`).join('')}</select></div>`:''}
+    </div>
+    <div class="row">
+      <div style="flex:2 1 240px"><label class="f" for="funext">Next step</label><input id="funext" type="text" value="${esc(p.next_action||'')}" placeholder="e.g. Set up 1-hr call"></div>
+      <div><label class="f" for="fudue">Due</label><input id="fudue" type="date" value="${esc(p.due_date||'')}"></div>
+    </div>`;
+}
+async function saveFollowup(p){
+  const patch = {owner_email:$('#fuown').value||null, next_action:$('#funext').value.trim()||null, due_date:$('#fudue').value||null};
+  if(!await updatePerson(p.id, patch)) return false;
+  if($('#fustage') && $('#fustage').value!==stageOf(p.id)) await setStage(p.id, $('#fustage').value);
+  return true;
+}
+function openPersonCard(pid){
+  const p = person(pid), cs = commitsOf(pid);
+  modal(`${head(esc(p.name), `${esc([p.title,p.org].filter(Boolean).join(', '))} · <a href="#person/${p.id}" onclick="closeModal()">Open full page</a>`)}
+    <h3 style="margin-top:6px">Follow-up</h3>
+    ${followupFields(p)}
+    <div class="btns" style="margin-top:12px"><button class="btn primary" id="fusave">Save</button>
+      <button class="btn" onclick="openDraft('${pid}')">Draft email</button><button class="btn" onclick="openLog('${pid}')">Log a touch</button><button class="btn" onclick="openOutcome('${pid}')">+ Outcome</button></div>
+    <div class="hr"></div>
+    <div class="section-head"><h3>Commitments (${cs.length})</h3><button class="btn sm" onclick="openNewCommit('${pid}')">+ Add</button></div>
+    <div class="card">${commitRows(cs)}</div>
+    <p class="tiny muted">Change one commitment’s status here (for example, mark one done) without moving the others.</p>`);
+  $('#fusave').onclick = async () => { if(await saveFollowup(p)){ closeModal(); route(); toast('Saved'); } };
+  wireQuickStatus(() => openPersonCard(pid));
+}
+function commitRows(cs){
+  return cs.length ? cs.map(c=>`
+    <div class="pc">
+      <div class="grow" onclick="openCommit('${c.id}')">
+        <div class="small">${esc(c.text)}</div>
+        <div class="meta" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">${strengthChip(c.strength)}${askChips(c.id)}${c.direction!=='to_us'?`<span class="chip">${esc(DIRECTION_L[c.direction])}</span>`:''}${c.counterpart_id?`<span class="chip">→ ${esc(person(c.counterpart_id)?.name||'')}</span>`:''}</div>
+      </div>
+      <select data-cid="${c.id}" class="quickstatus" aria-label="Status">${STATUSES.map(s=>`<option value="${s.k}" ${s.k===c.status?'selected':''}>${s.l}</option>`).join('')}</select>
+    </div>`).join('') : '<div class="pc muted small">No commitments recorded.</div>';
+}
+function wireQuickStatus(after){
+  document.querySelectorAll('.quickstatus').forEach(sel=>sel.onchange = async e => {
+    if(await updateCommit(sel.dataset.cid,{status:e.target.value})){ toast('Status updated'); after(); }
+  });
+}
+
+/* ===== People ===== */
+const SECTORS = ['Philanthropy','Bridging & dialogue','Youth & civic education','Libraries, media & culture','Community & place','Hosts'];
+const PF = {q:'', sector:''};
+function renderPeople(){
+  const q = PF.q.toLowerCase();
+  const keep = p => (!PF.sector || p.sector===PF.sector) && (!q || `${p.name} ${p.org||''} ${p.title||''} ${p.geography||''} ${p.bio||''}`.toLowerCase().includes(q));
+  const byName = (a,b)=>a.name.localeCompare(b.name);
+  const committed = S.people.filter(p=>!p.introduced_by && commitsOf(p.id).length && keep(p)).sort(byName);
+  const room = S.people.filter(p=>!p.introduced_by && !commitsOf(p.id).length && keep(p));
+  const intro = S.people.filter(p=>p.introduced_by && keep(p)).sort(byName);
+  const sub = p => `${esc([p.title,p.org].filter(Boolean).join(', '))}${p.ncc_visits>1?` · ${p.ncc_visits} NCCs`:''}`;
+  const row = p => {
+    const cs = commitsOf(p.id), lt = lastTouch(p.id);
+    const via = p.introduced_by ? person(p.introduced_by) : null;
+    return `<tr class="click" onclick="location.hash='person/${p.id}'">
+      <td><b>${esc(p.name)}</b><div class="tiny muted">${sub(p)}</div></td>
+      <td class="hide-sm small">${esc(p.sector||'')}${p.geography?`<div class="tiny muted">${esc(p.geography)}</div>`:''}</td>
+      <td>${via?`<span class="small">via ${esc(via.name)}</span>`:cs.length?`<div class="mini">${cs.map(c=>`<i class="st-${c.status}" title="${esc(STATUS_L[c.status])}: ${esc(c.text)}"></i>`).join('')}</div><div class="tiny muted">${cs.length} commitment${cs.length===1?'':'s'}</div>`:'<span class="tiny muted">None yet</span>'}</td>
+      <td class="small">${lt?fmtDate(lt):'<span class="muted">—</span>'}</td>
+    </tr>`;
+  };
+  const table = (rows, col3) => `<div class="card" style="overflow-x:auto"><table class="ptable"><thead><tr><th>Person</th><th class="hide-sm">Sector</th><th>${col3}</th><th>Last touch</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`;
+  const roomGroups = SECTORS.concat(['Other']).map(sec=>{
+    const list = room.filter(p=>(p.sector||'Other')===sec).sort(byName);
+    return list.length ? `<details class="group" ${PF.q||PF.sector?'open':''}><summary><b>${esc(sec)}</b> <span class="muted small">${list.length}</span></summary>${table(list,'Commitments')}</details>` : '';
+  }).join('');
+  $('#main').innerHTML = `
+    <div class="section-head"><h2>People</h2><div class="btns"><button class="btn" onclick="openBatchDrafts()">Batch emails</button><button class="btn primary" onclick="openNewPerson()">+ Add person</button></div></div>
+    <div class="toolbar">
+      <input type="text" id="pq" placeholder="Search names, orgs, bios" value="${esc(PF.q)}">
+      <select id="psec"><option value="">All sectors</option>${SECTORS.map(x=>`<option ${x===PF.sector?'selected':''}>${esc(x)}</option>`).join('')}</select>
+      <span class="small muted" style="margin-left:auto">${committed.length+room.length+intro.length} of ${S.people.length}</span>
+    </div>
+    ${committed.length?`<div class="section-head"><h3>Made commitments</h3><span class="small muted">${committed.length}</span></div>${table(committed,'Commitments')}`:''}
+    ${room.length?`<div class="section"><div class="section-head"><h3>In the room, no commitment yet</h3><span class="small muted">${room.length} · open a group to browse</span></div>${roomGroups}</div>`:''}
+    ${intro.length?`<div class="section"><div class="section-head"><h3>Introduced to us</h3><span class="small muted">Second-degree contacts — not yet met</span></div>${table(intro,'Introduced by')}</div>`:''}
+    ${!(committed.length+room.length+intro.length)?'<p class="muted">No one matches.</p>':''}`;
+  $('#pq').oninput = e => { PF.q = e.target.value; const pos=e.target.selectionStart; renderPeople(); const el=$('#pq'); el.focus(); el.setSelectionRange(pos,pos); };
+  $('#psec').onchange = e => { PF.sector = e.target.value; renderPeople(); };
+}
+
+function renderPerson(id){
+  const p = person(id);
+  if(!p){ $('#main').innerHTML = '<p>Person not found. <a href="#people">Back to people</a></p>'; return; }
+  const cs = commitsOf(id);
+  const aboutThem = S.commits.filter(c=>c.counterpart_id===id);
+  const intros = S.people.filter(x=>x.introduced_by===id);
+  const via = p.introduced_by ? person(p.introduced_by) : null;
+  const ev = p.met_at_event ? S.events.find(e=>e.id===p.met_at_event) : null;
+  const tl = [
+    ...S.interactions.filter(i=>i.person_id===id).map(i=>({d:i.occurred_on,c:i.created_at,h:`<span class="tl-kind">${esc(KIND_L[i.kind])} · ${esc(FLOW_L[i.flow])}</span><div>${esc(i.summary)}</div>${i.commitment_id?`<div class="tiny muted">Re: ${esc(S.commits.find(c=>c.id===i.commitment_id)?.text||'')}</div>`:''}`, by:i.logged_by})),
+    ...S.outcomes.filter(o=>o.person_id===id).map(o=>({d:o.occurred_on,c:o.created_at,h:`<span class="tl-kind" style="color:var(--s-realized)">Outcome · ${esc(OUTCOME_L[o.kind])}${o.amount?` · $${Number(o.amount).toLocaleString()}`:''}</span><div>${esc(o.description)}</div>`, by:o.logged_by}))
+  ].sort((a,b)=>(b.d+b.c).localeCompare(a.d+a.c));
+
+  $('#main').innerHTML = `
+    <p class="small"><a href="#people">← People</a></p>
+    <div class="person-head">
+      <div>
+        <h2>${esc(p.name)}</h2>
+        <div class="muted">${esc([p.title,p.org].filter(Boolean).join(', '))}</div>
+        <div class="small muted">${[p.geography, p.email?`<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:'', ev?`Met at ${esc(ev.name)}, ${esc(ev.location||'')}`:'', via?`Introduced by <a href="#person/${via.id}">${esc(via.name)}</a>`:'', p.ncc_visits?`${p.ncc_visits} Collaborator${p.ncc_visits===1?'y':'ies'} attended`:''].filter(Boolean).join(' · ')}</div>
+        ${p.notes?`<p class="small" style="max-width:680px"><b>Note:</b> ${esc(p.notes)}</p>`:''}
+        ${!biosLoaded && p.bio===undefined?'<p class="tiny muted">Loading bio…</p>':''}${p.bio?`<details class="bio"><summary class="small">Bio</summary><div class="small">${esc(p.bio).split(/\n\s*\n|\n/).filter(x=>x.trim()).map(x=>`<p>${x}</p>`).join('')}</div></details>`:''}
+      </div>
+      <div class="btns">
+        <button class="btn" onclick="openEditPerson('${id}')">Edit</button>
+        <button class="btn" onclick="openDraft('${id}')">Draft email</button>
+        <button class="btn primary" onclick="openLog('${id}')">Log a touch</button>
+      </div>
+    </div>
+
+    <div class="section two">
+      <div>
+        ${cs.length?`<div class="card pad fu-panel"><h3>Follow-up</h3>${followupFields(p)}<div style="margin-top:12px"><button class="btn primary sm" id="fusave">Save follow-up</button></div></div>`:''}
+        <div class="section-head" style="margin-top:20px"><h3>Commitments</h3><button class="btn sm" onclick="openNewCommit('${id}')">+ Add</button></div>
+        <div class="card">${commitRows(cs)}</div>
+
+        ${aboutThem.length?`<div class="section-head" style="margin-top:20px"><h3>Commitments involving them</h3></div>
+        <div class="card list">${aboutThem.map(c=>`<div class="li click" onclick="openCommit('${c.id}')"><div class="grow small"><b>${esc(person(c.person_id)?.name)}</b>: ${esc(c.text)}</div>${statusChip(c.status)}</div>`).join('')}</div>`:''}
+
+        ${intros.length?`<div class="section-head" style="margin-top:20px"><h3>People they introduced</h3></div>
+        <div class="card list">${intros.map(x=>`<div class="li click" onclick="location.hash='person/${x.id}'"><div class="grow small"><b>${esc(x.name)}</b> · ${esc(x.org||'')}</div></div>`).join('')}</div>`:''}
+      </div>
+      <div>
+        <div class="section-head"><h3>Timeline</h3><button class="btn sm" onclick="openOutcome('${id}')">+ Outcome</button></div>
+        <div class="card list timeline">${tl.length ? tl.map(t=>`<div class="li"><div class="grow small">${t.h}<div class="tiny muted">${fmtDate(t.d)}${t.by?' · '+esc(ownerName(t.by)):''}</div></div></div>`).join('') : '<div class="li muted small">Nothing logged yet.</div>'}</div>
+      </div>
+    </div>`;
+  wireQuickStatus(() => renderPerson(id));
+  if($('#fusave')) $('#fusave').onclick = async () => { if(await saveFollowup(p)){ renderPerson(id); toast('Follow-up saved'); } };
+}
+
+/* ===== Big Sur ===== */
+function renderBigSur(){
+  const bsAsk = S.asks.find(a=>a.code==='bigsur');
+  const ev = S.events.find(e=>/big sur/i.test(e.name)) || {};
+  const days = ev.starts_on ? Math.round((new Date(ev.starts_on+'T12:00:00') - new Date(today()+'T12:00:00'))/86400000) : null;
+  const cs = bsAsk ? S.commits.filter(c=>S.cAsks.get(c.id)?.has(bsAsk.id)) : [];
+  const attendIds = new Set(cs.map(c=>c.person_id));
+  const confirmed = cs.filter(c=>['responded','in_progress','realized'].includes(c.status));
+  const group = (title, list, note) => `<div class="section-head" style="margin-top:20px"><h3>${title}</h3><span class="small muted">${note}</span></div>
+    <div class="card list">${list.length ? list.map(c=>`<div class="li click" onclick="openCommit('${c.id}')">
+      <div class="grow"><b class="small">${esc(person(c.person_id)?.name)}</b> <span class="tiny muted">${esc(person(c.person_id)?.org||'')}</span><div class="small">${esc(c.text)}</div>
+      <div class="tiny muted">${esc(ownerName(person(c.person_id)?.owner_email))}${person(c.person_id)?.next_action?' · '+esc(person(c.person_id).next_action):''}</div></div>${statusChip(c.status)}</div>`).join('') : '<div class="li small muted">None</div>'}</div>`;
+  const notAsked = S.people.filter(p=>!attendIds.has(p.id)).sort((a,b)=>a.name.localeCompare(b.name));
+  const naCommitted = notAsked.filter(p=>commitsOf(p.id).length || p.introduced_by);
+  const naRoom = notAsked.filter(p=>!commitsOf(p.id).length && !p.introduced_by && p.sector!=='Hosts');
+  const naRow = p => `<div class="li click" onclick="location.hash='person/${p.id}'"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}${p.introduced_by?` <span class="tiny muted">(via ${esc(person(p.introduced_by)?.name)})</span>`:''}</div>${p.sector?`<span class="chip">${esc(p.sector)}</span>`:''}</div>`;
+  $('#main').innerHTML = `
+    <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div><h2>${esc(ev.name||'Big Sur gathering')}</h2><div class="muted">${esc(ev.when_label||'')} · ${esc(ev.location||'')}</div></div>
+      ${days!==null?`<div class="countdown"><span class="n">${Math.max(days,0)}</span><span class="muted">${days>0?'days to go':days===0?'starts today':'days — it has started'}</span></div>`:''}
+    </div>
+    <div class="kpis section">
+      <div class="card kpi"><div class="n">${new Set(cs.filter(c=>c.strength==='firm').map(c=>c.person_id)).size}</div><div class="l">said yes</div></div>
+      <div class="card kpi"><div class="n">${new Set(cs.filter(c=>c.strength!=='firm').map(c=>c.person_id)).size}</div><div class="l">maybe</div></div>
+      <div class="card kpi"><div class="n">${new Set(confirmed.map(c=>c.person_id)).size}</div><div class="l">confirmed since Atlanta</div></div>
+    </div>
+    ${group('Said yes', cs.filter(c=>c.strength==='firm'), 'Includes offers to bring others')}
+    ${group('Maybe', cs.filter(c=>c.strength!=='firm'), 'Schedule or space permitting')}
+    <div class="section-head" style="margin-top:20px"><h3>Not yet asked about Big Sur</h3><span class="small muted">Already engaged — made other commitments or were introduced</span></div>
+    <div class="card list">${naCommitted.map(naRow).join('') || '<div class="li small muted">None</div>'}</div>
+    ${naRoom.length?`<details class="group" style="margin-top:12px"><summary><b>Others from the room</b> <span class="muted small">${naRoom.length} · no commitment yet, hosts excluded</span></summary><div class="card list">${naRoom.map(naRow).join('')}</div></details>`:''}`;
+}
+
+/* ===== Members ===== */
+function renderMembers(){
+  const owner = true;
+  $('#main').innerHTML = `
+    <div class="section-head"><h2>Members</h2></div>
+    <p class="small muted" style="max-width:640px">Members can see and edit everything in this ledger. No login is needed — members appear in the “I’m” picker at the top, which stamps who logged each touch, and in the owner lists.</p>
+    <div class="card list">${S.members.map(m=>`<div class="li"><span class="owner">${esc(initials(m.email))}</span><div class="grow"><b class="small">${esc(m.name||'')}</b> <span class="small muted">${esc(m.email)}</span></div><span class="chip">${esc(m.role)}</span>
+      ${owner && S.members.length>1?`<button class="btn sm danger" onclick="removeMember('${esc(m.email)}')">Remove</button>`:''}</div>`).join('')}</div>
+    ${owner?`<div class="card pad section" style="max-width:560px"><h3>Add a member</h3>
+      <div class="row"><div><label class="f" for="mname">Name</label><input id="mname" type="text"></div><div><label class="f" for="memail">Email</label><input id="memail" type="email"></div></div>
+      <label class="f" for="mrole">Role</label><select id="mrole"><option value="member">Member</option><option value="owner">Lead</option></select>
+      <div style="margin-top:14px"><button class="btn primary" id="maddBtn">Add member</button></div></div>`:''}`;
+  if(owner) $('#maddBtn').onclick = async () => {
+    const email = $('#memail').value.trim().toLowerCase(); if(!email) return;
+    const {error} = await sb.from('ct_members').insert({workspace_id:S.ws.id, email, name:$('#mname').value.trim()||null, role:$('#mrole').value});
+    if(error) return fail(error);
+    await loadAll(); renderMe(); renderMembers(); toast('Member added');
+  };
+}
+async function removeMember(email){
+  if(!confirm(`Remove ${email} from this ledger?`)) return;
+  const {error} = await sb.from('ct_members').delete().eq('workspace_id',S.ws.id).eq('email',email);
+  if(error) return fail(error);
+  if(email===ME_EMAIL){ ME_EMAIL=''; }
+  await loadAll(); if(!member(ME_EMAIL)) ME_EMAIL = S.members[0]?.email||''; renderMe(); renderMembers();
+}
+
+/* ===== Modals ===== */
+function modal(html){ $('#modalRoot').innerHTML = `<div class="scrim" id="scrim"><div class="drawer" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('#scrim').addEventListener('click', e=>{ if(e.target.id==='scrim') closeModal(); });
+  document.addEventListener('keydown', escClose);
+}
+function escClose(e){ if(e.key==='Escape') closeModal(); }
+function closeModal(){ $('#modalRoot').innerHTML=''; document.removeEventListener('keydown', escClose); }
+const head = (title, sub) => `<div class="drawer-h"><div><h2>${title}</h2>${sub?`<div class="small muted">${sub}</div>`:''}</div><button class="btn ghost" onclick="closeModal()" aria-label="Close">✕</button></div>`;
+const ownerSelect = (id, cur) => `<select id="${id}"><option value="">Unassigned</option>${S.members.map(m=>`<option value="${esc(m.email)}" ${m.email===cur?'selected':''}>${esc(m.name||m.email)}</option>`).join('')}</select>`;
+const peopleSelect = (id, cur, blank) => `<select id="${id}">${blank?`<option value="">${blank}</option>`:''}${[...S.people].sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${esc(p.name)}${p.org?' — '+esc(p.org):''}</option>`).join('')}</select>`;
+const askChecks = sel => `<div class="checks">${S.asks.map(a=>`<label><input type="checkbox" value="${a.id}" ${sel.has(a.id)?'checked':''}>${esc(a.label)}</label>`).join('')}</div>`;
+const sel = (id, map, cur) => `<select id="${id}">${Object.entries(map).map(([k,l])=>`<option value="${k}" ${k===cur?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+
+function commitFields(c){
+  return `
+    <label class="f" for="ctext">Commitment</label><textarea id="ctext">${esc(c.text||'')}</textarea>
+    <label class="f">Counts toward</label>${askChecks(S.cAsks.get(c.id)||new Set())}
+    <div class="row">
+      <div><label class="f" for="cstr">Strength</label>${sel('cstr', STRENGTH_L, c.strength||'firm')}</div>
+      <div><label class="f" for="cdir">Direction</label>${sel('cdir', DIRECTION_L, c.direction||'to_us')}</div>
+    </div>
+    <label class="f" for="ccp">Involves (introduction or counterpart)</label>${peopleSelect('ccp', c.counterpart_id, '— none —')}
+    <label class="f" for="cstat">Status</label>${sel('cstat', STATUS_L, c.status||'committed')}
+    <p class="tiny muted" style="margin:8px 0 0">Owner, next step and due date are set once per person, on their card.</p>`;
+}
+function readCommitFields(){
+  return {
+    patch:{ text:$('#ctext').value.trim(), strength:$('#cstr').value, direction:$('#cdir').value, counterpart_id:$('#ccp').value||null,
+            status:$('#cstat').value },
+    asks:[...document.querySelectorAll('.checks input:checked')].map(i=>i.value)
+  };
+}
+
+function openCommit(id){
+  const c = S.commits.find(x=>x.id===id); const p = person(c.person_id);
+  const ints = S.interactions.filter(i=>i.commitment_id===id);
+  const outs = S.outcomes.filter(o=>o.commitment_id===id);
+  modal(`${head(esc(p?.name), `${esc(p?.org||'')} · <a href="#person/${p?.id}" onclick="closeModal()">Open person</a>`)}
+    ${commitFields(c)}
+    <div class="btns" style="margin-top:16px"><button class="btn primary" id="csave">Save</button><button class="btn danger sm push" id="cdel">Delete</button></div>
+    <div class="hr"></div>
+    <div class="section-head"><h3>History</h3><div class="btns"><button class="btn sm" onclick="openLog('${p.id}','${id}')">Log a touch</button><button class="btn sm" onclick="openOutcome('${p.id}','${id}')">+ Outcome</button></div></div>
+    <div class="list">${[...outs.map(o=>`<div class="li" style="padding:8px 0"><div class="grow small"><span class="tl-kind" style="color:var(--s-realized)">Outcome · ${esc(OUTCOME_L[o.kind])}</span><div>${esc(o.description)}</div><div class="tiny muted">${fmtDate(o.occurred_on)}</div></div></div>`),
+      ...ints.map(i=>`<div class="li" style="padding:8px 0"><div class="grow small"><span class="tl-kind">${esc(KIND_L[i.kind])} · ${esc(FLOW_L[i.flow])}</span><div>${esc(i.summary)}</div><div class="tiny muted">${fmtDate(i.occurred_on)}</div></div></div>`)].join('') || '<div class="small muted">Nothing logged against this commitment yet.</div>'}</div>
+    <p class="tiny muted" style="margin-top:16px">Recorded at ${esc(S.events.find(e=>e.id===c.event_id)?.name||'—')}</p>`);
+  $('#csave').onclick = async () => {
+    const {patch, asks} = readCommitFields(); if(!patch.text) return toast('The commitment needs some text');
+    if(await updateCommit(id, patch)){ await setCommitAsks(id, asks); closeModal(); route(); toast('Saved'); }
+  };
+  $('#cdel').onclick = async () => {
+    if(!confirm('Delete this commitment? Its touches and outcomes stay on the person’s timeline.')) return;
+    const {error} = await sb.from('ct_commitments').delete().eq('id',id); if(error) return fail(error);
+    S.commits = S.commits.filter(x=>x.id!==id); closeModal(); route(); toast('Deleted');
+  };
+}
+
+function openNewCommit(pid){
+  modal(`${head('New commitment')}
+    <label class="f" for="cperson">Who made it</label>${peopleSelect('cperson', pid||'', 'Choose a person…')}
+    <label class="f" for="cevent">Where</label><select id="cevent"><option value="">— no event —</option>${S.events.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select>
+    ${commitFields({})}
+    <div style="margin-top:16px"><button class="btn primary" id="cadd">Add commitment</button></div>`);
+  $('#cadd').onclick = async () => {
+    const person_id = $('#cperson').value; const {patch, asks} = readCommitFields();
+    if(!person_id || !patch.text) return toast('Choose a person and describe the commitment');
+    const row = await insert('ct_commitments', {...patch, person_id, event_id:$('#cevent').value||null, sort:commitsOf(person_id).length+1});
+    if(!row) return;
+    S.commits.push(row); await setCommitAsks(row.id, asks); closeModal(); route(); toast('Commitment added');
+  };
+}
+
+function openLog(pid, cid){
+  const cs = commitsOf(pid).concat(S.commits.filter(c=>c.counterpart_id===pid));
+  modal(`${head('Log a touch', esc(person(pid)?.name))}
+    <div class="row">
+      <div><label class="f" for="lkind">Type</label>${sel('lkind', KIND_L, 'email')}</div>
+      <div><label class="f" for="lflow">Who initiated</label>${sel('lflow', FLOW_L, 'outbound')}</div>
+      <div><label class="f" for="ldate">Date</label><input id="ldate" type="date" value="${today()}"></div>
+    </div>
+    <label class="f" for="lcommit">About</label>
+    <select id="lcommit"><option value="">General — not one commitment</option>${cs.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.text.slice(0,90))}</option>`).join('')}</select>
+    <label class="f" for="lsum">What happened</label><textarea id="lsum" placeholder="e.g. Sent follow-up email quoting her Atlanta commitments; proposed times for a call"></textarea>
+    <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="lbump" checked> Move the status forward automatically</label>
+    <p class="tiny muted" style="margin:4px 0 0 24px">Outreach moves “Committed” to “Reached out”; a reply moves it to “Responded”. Applies to the selected commitment, or to all of this person’s untouched ones if none is selected.</p>
+    <div style="margin-top:16px"><button class="btn primary" id="ladd">Save</button></div>`);
+  $('#ladd').onclick = async () => {
+    const summary = $('#lsum').value.trim(); if(!summary) return toast('Add a short note about what happened');
+    const commitment_id = $('#lcommit').value || null, flow = $('#lflow').value;
+    const row = await insert('ct_interactions', {person_id:pid, commitment_id, kind:$('#lkind').value, flow, occurred_on:$('#ldate').value||today(), summary, logged_by:ME()});
+    if(!row) return;
+    S.interactions.unshift(row);
+    let moved = 0;
+    if($('#lbump').checked && flow!=='internal'){
+      const targets = commitment_id ? S.commits.filter(c=>c.id===commitment_id) : commitsOf(pid);
+      const ids = targets.filter(c=> flow==='outbound' ? c.status==='committed' : ['committed','reached_out'].includes(c.status)).map(c=>c.id);
+      moved = await updateCommits(ids, {status: flow==='outbound' ? 'reached_out' : 'responded'});
+    }
+    closeModal(); route(); toast(moved ? `Logged · ${moved} status update${moved>1?'s':''}` : 'Logged');
+  };
+}
+
+function openOutcome(pid, cid){
+  const cs = commitsOf(pid).concat(S.commits.filter(c=>c.counterpart_id===pid));
+  modal(`${head('Record an outcome', esc(person(pid)?.name))}
+    <p class="small muted" style="margin-top:0">What actually came of it — a meeting held, an introduction made, a pilot site agreed, money raised, someone at Big Sur.</p>
+    <div class="row">
+      <div><label class="f" for="okind">Kind</label>${sel('okind', OUTCOME_L, 'meeting_held')}</div>
+      <div><label class="f" for="odate">Date</label><input id="odate" type="date" value="${today()}"></div>
+      <div><label class="f" for="oamt">Amount ($, optional)</label><input id="oamt" type="number" min="0" step="1"></div>
+    </div>
+    <label class="f" for="ocommit">From which commitment</label>
+    <select id="ocommit"><option value="">— not tied to one —</option>${cs.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.text.slice(0,90))}</option>`).join('')}</select>
+    <label class="f" for="odesc">Description</label><textarea id="odesc"></textarea>
+    <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="oreal" ${cid?'checked':''}> Mark that commitment as realized</label>
+    <div style="margin-top:16px"><button class="btn primary" id="oadd">Save outcome</button></div>`);
+  $('#oadd').onclick = async () => {
+    const description = $('#odesc').value.trim(); if(!description) return toast('Describe the outcome');
+    const commitment_id = $('#ocommit').value || null;
+    const amt = $('#oamt').value;
+    const row = await insert('ct_outcomes', {person_id:pid, commitment_id, kind:$('#okind').value, occurred_on:$('#odate').value||today(), description, amount: amt===''?null:Number(amt), logged_by:ME()});
+    if(!row) return;
+    S.outcomes.unshift(row);
+    if(commitment_id && $('#oreal').checked) await updateCommit(commitment_id,{status:'realized'});
+    closeModal(); route(); toast('Outcome recorded');
+  };
+}
+
+function personFields(p){
+  return `<label class="f" for="pname">Name</label><input id="pname" type="text" value="${esc(p.name||'')}">
+    <div class="row"><div><label class="f" for="porg">Organization</label><input id="porg" type="text" value="${esc(p.org||'')}"></div>
+      <div><label class="f" for="ptitle">Role / title</label><input id="ptitle" type="text" value="${esc(p.title||'')}"></div></div>
+    <div class="row"><div><label class="f" for="pemail">Email</label><input id="pemail" type="email" value="${esc(p.email||'')}"></div>
+      <div><label class="f" for="pgeo">Geography</label><input id="pgeo" type="text" value="${esc(p.geography||'')}"></div></div>
+    <label class="f" for="pvia">Introduced by</label>${peopleSelect('pvia', p.introduced_by, '— met directly —')}
+    <label class="f" for="pnotes">Notes</label><textarea id="pnotes">${esc(p.notes||'')}</textarea>
+    <label class="f" for="pbio">Bio</label><textarea id="pbio" style="min-height:120px">${esc(p.bio||'')}</textarea>`;
+}
+const readPerson = () => ({name:$('#pname').value.trim(), org:$('#porg').value.trim()||null, title:$('#ptitle').value.trim()||null, email:$('#pemail').value.trim()||null, geography:$('#pgeo').value.trim()||null, introduced_by:$('#pvia').value||null, notes:$('#pnotes').value.trim()||null, bio:$('#pbio').value.trim()||null});
+function openEditPerson(id){
+  const p = person(id);
+  modal(`${head('Edit person')}${personFields(p)}<div style="margin-top:16px"><button class="btn primary" id="psave">Save</button></div>`);
+  $('#psave').onclick = async () => {
+    const patch = readPerson(); if(!patch.name) return toast('Name is required');
+    if(patch.introduced_by===id) patch.introduced_by=null;
+    const {data, error} = await sb.from('ct_people').update(patch).eq('id',id).select().single(); if(error) return fail(error);
+    S.people[S.people.findIndex(x=>x.id===id)] = data; closeModal(); route(); toast('Saved');
+  };
+}
+function openNewPerson(){
+  modal(`${head('Add person')}${personFields({})}
+    <label class="f" for="pev">Met at</label><select id="pev"><option value="">— not at an event —</option>${S.events.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select>
+    <div style="margin-top:16px"><button class="btn primary" id="padd">Add person</button></div>`);
+  $('#padd').onclick = async () => {
+    const row = readPerson(); if(!row.name) return toast('Name is required');
+    const data = await insert('ct_people', {...row, met_at_event:$('#pev').value||null}); if(!data) return;
+    S.people.push(data); closeModal(); location.hash = 'person/'+data.id; toast('Person added');
+  };
+}
+
+/* ===== Email templates → Google Doc ===== */
+const TEMPLATES = {
+  first:  {label:'First follow-up from Atlanta', short:'First follow-up', moves:true},
+  nudge:  {label:'Gentle nudge', short:'Nudge', moves:true},
+  bigsur: {label:'Big Sur invitation or logistics', short:'Big Sur', moves:false},
+  thanks: {label:'Thank you after something happened', short:'Thank-you', moves:false}
+};
+const isOpen = c => !['realized','declined'].includes(c.status) && c.direction!=='between_others';
+const openCommitsFor = pid => commitsOf(pid).filter(isOpen);
+const bigSurAsk = () => S.asks.find(a=>a.code==='bigsur');
+const bigSurCommits = pid => { const bs = bigSurAsk(); return bs ? commitsOf(pid).filter(c=>S.cAsks.get(c.id)?.has(bs.id) && c.status!=='declined') : []; };
+const bigSurEvent = () => S.events.find(e=>/big sur/i.test(e.name)) || {when_label:'December 6–7', location:'Big Sur, CA'};
+// Capture-sheet wording → second person for "You offered to:" bullets
+function toYou(t){
+  let x = t.replace(/\s*\([^)]*\)/g,'').replace(/\s+—\s.*$/,'').trim();
+  x = x.replace(/\b[Hh]is\b|\b[Hh]er\b/g,'your').replace(/\bthem\b/g,'us');
+  return x.charAt(0).toLowerCase() + x.slice(1);
+}
+const bullets = cs => cs.map(c=>'• '+toYou(c.text)).join('\n');
+// Sentence-style bullets for the first follow-up: "Join us in Big Sur on December 6–7."
+function offerLine(c){
+  let x = toYou(c.text);
+  x = x.replace(/^(tentatively )?(attend|join) (the )?big sur( gathering)?( on december 6 and 7)?/i, 'join us in Big Sur on December 6–7');
+  x = x.replace(/\bintroduce them\b/i, 'introduce us');
+  x = x.charAt(0).toUpperCase() + x.slice(1);
+  return /[.!?]$/.test(x) ? x : x + '.';
+}
+const offerBullets = cs => cs.map(c=>'• '+offerLine(c)).join('\n');
+const TOPIC = {meetings:'shaping the methodology', donors:'potential funding connections', pilots:'possible pilot communities', partner:'implementation partnerships'};
+function topicFor(cs){
+  for(const c of cs){
+    const codes = [...(S.cAsks.get(c.id)||[])].map(id=>ask(id)?.code).filter(k=>TOPIC[k]);
+    if(codes.length) return TOPIC[S.asks.map(a=>a.code).find(k=>codes.includes(k))];
+  }
+  return '';
+}
+const lastTouchOf = (pid, flow) => S.interactions.filter(i=>i.person_id===pid && (!flow || i.flow===flow)).map(i=>i.occurred_on).sort().pop();
+const lastOutcome = pid => S.outcomes.filter(o=>o.person_id===pid).sort((a,b)=>(b.occurred_on+b.created_at).localeCompare(a.occurred_on+a.created_at))[0];
+const THANKS_LINE = {
+  meeting_held:'Thank you for taking the time to meet with us.',
+  introduction_made:'Thank you for the introduction{to}.',
+  pilot_site:'Thank you for working with us to set up a pilot site.',
+  funding:'Thank you for your support of the CPTA work.',
+  attendance:'Thank you for joining us in Big Sur.',
+  council_seat:'Thank you for agreeing to help shape the methodology.',
+  partnership:'Thank you for partnering with us on the CPTA work.',
+  other:'Thank you for [what they did].'
+};
+
+function suggestTemplate(pid){
+  const o = lastOutcome(pid);
+  const thanked = S.interactions.some(i=>i.person_id===pid && /thank-you/i.test(i.summary) && (!o || i.occurred_on>=o.occurred_on));
+  if(o && !thanked) return 'thanks';
+  const cs = openCommitsFor(pid);
+  if(cs.some(c=>c.status==='committed')) return 'first';
+  if(cs.some(c=>c.status==='reached_out')) return 'nudge';
+  return bigSurCommits(pid).some(isOpen) ? 'bigsur' : 'first';
+}
+
+function draftFor(pid, tpl){
+  const p = person(pid), open = openCommitsFor(pid), me = member(ME())?.name || '';
+  const first = p.name.split(' ')[0];
+  const ev = S.events.find(e=>e.id===p.met_at_event);
+  const where = ev ? 'the ' + ev.name.replace(/ — .*/, '') + (ev.location?` in ${ev.location.replace(/, [A-Z]{2}$/,'')}`:'') : 'the Collaboratory';
+  const bs = bigSurEvent(), bsCs = bigSurCommits(pid).filter(isOpen);
+  const sign = `\n\nWarm regards,\n${me}`;
+  let subject, body;
+  if(tpl==='nudge'){
+    const last = lastTouchOf(pid,'outbound');
+    subject = 'Checking in — CPTA follow-up from Atlanta';
+    body = `Hi ${first},
+
+I wanted to circle back on ${last?`my note from ${fmtDate(last)}`:'my earlier note'} — I know how quickly things fill up after the Collaboratory. When we met in Atlanta, you offered to:
+
+${bullets(open)}
+
+Would any of these still work for you? Even a 20-minute call would help us figure out the right next step.${bsCs.length?`\n\nWe're also still holding a spot for you in Big Sur, ${bs.when_label}.`:''}` + sign;
+  } else if(tpl==='bigsur'){
+    const firm = bsCs.some(c=>c.strength==='firm'), maybe = bsCs.length && !firm;
+    const bringing = bsCs.some(c=>/bring|with his firm|young|students/i.test(c.text));
+    if(firm){
+      subject = `Big Sur, ${bs.when_label.replace(/, \d{4}$/,'')} — details and RSVP`;
+      body = `Hi ${first},
+
+Thank you for saying yes to joining us in Big Sur. Here's what we have so far:
+
+• Dates: ${bs.when_label}
+• Location: [venue], ${bs.location}
+• Arrival: [time and place]
+• Lodging and meals: [details]
+• What to expect: two days with a small group shaping the CPTA methodology, pilot sites and the coalition
+
+Could you confirm by [date] that you're coming${bringing?', and let us know who will be joining you':''}?` + sign;
+    } else if(maybe){
+      subject = `Big Sur, ${bs.when_label.replace(/, \d{4}$/,'')} — can you make it?`;
+      body = `Hi ${first},
+
+In Atlanta you mentioned you might be able to join us in Big Sur on ${bs.when_label}. We'd love to have you there — it's a small group working on the CPTA methodology, pilot sites and the coalition that grows out of the Collaboratory.
+
+Could you let us know by [date] whether it will work? Happy to share details on travel and lodging.` + sign;
+    } else {
+      subject = `Join us in Big Sur, ${bs.when_label.replace(/, \d{4}$/,'')}?`;
+      body = `Hi ${first},
+
+It was good to be in the room with you at ${where}. We're bringing a small group together in Big Sur on ${bs.when_label}, to shape the CPTA methodology and choose pilot sites, and given your work${p.org?` at ${p.org}`:''}, we'd love for you to join us.
+
+Would you be interested? I'm happy to send details on travel and lodging.` + sign;
+    }
+  } else if(tpl==='thanks'){
+    const o = lastOutcome(pid);
+    const oc = o?.commitment_id ? S.commits.find(c=>c.id===o.commitment_id) : null;
+    const to = oc?.counterpart_id ? ` to ${person(oc.counterpart_id)?.name}` : '';
+    const line = (o ? THANKS_LINE[o.kind] : 'Thank you for [what they did].').replace('{to}', to);
+    const rest = open.filter(c=>c.id!==o?.commitment_id);
+    subject = 'Thank you';
+    body = `Hi ${first},
+
+${line} [Add a sentence on what it led to or what we learned.]${rest.length?`\n\nWe're also looking forward to following up on your other offers to:\n\n${bullets(rest)}`:''}` + sign;
+  } else {
+    const topic = topicFor(open);
+    subject = 'Following up from Atlanta — CPTA and the cost of distrust';
+    body = `Hi ${first},
+
+It was great to connect at ${where}. Thank you for the generosity and enthusiasm you brought to the CPTA conversation. We’re excited to build on your offers to:
+
+${offerBullets(open)}
+
+We’d love to have you with us at Deetjen’s. Big Sur will give us time to think together, strengthen the approach, and explore its first community pilots. Your experience${p.org?` at ${p.org}`:''} would add so much to those conversations.
+
+I’ve attached the Big Sur invitation, a concept note, and the presentation deck in PDF form. They offer both a quick overview and more detail on the methods, depending on what interests you. The invitation includes the schedule and lodging arrangements, and we’ll follow up with additional travel and arrival details.
+
+Could we find an hour in the next couple of weeks to pick up the conversation? We’d especially welcome your thoughts on ${topic?`${topic} and `:''}where you see opportunities for our work to come together.` + sign;
+  }
+  return {p, tpl, subject, body};
+}
+
+let BATCH_INVITE = false;
+// Who each template is for, in the batch
+const BATCH_FILTER = {
+  first: p => openCommitsFor(p.id).some(c=>c.status==='committed'),
+  nudge: p => openCommitsFor(p.id).some(c=>c.status==='reached_out'),
+  bigsur: p => bigSurCommits(p.id).some(isOpen) || (BATCH_INVITE && !bigSurCommits(p.id).length && !p.introduced_by && p.sector!=='Hosts'),
+  thanks: p => !!lastOutcome(p.id)
+};
+
+// Plain text → simple HTML that pastes cleanly into Google Docs (bullets become a real list)
+function bodyHtml(body){
+  return body.split(/\n{2,}/).map(block=>{
+    const lines = block.split('\n');
+    if(lines.every(l=>l.startsWith('• '))) return '<ul>'+lines.map(l=>`<li>${esc(l.slice(2))}</li>`).join('')+'</ul>';
+    return '<p>'+lines.map(esc).join('<br>')+'</p>';
+  }).join('');
+}
+function draftBlockHtml(d){
+  return `<h2>${esc(d.p.name)}${d.p.org?` — ${esc(d.p.org)}`:''}</h2>
+    <p><b>To:</b> ${esc(d.p.email||'(no email on file)')}<br><b>Subject:</b> ${esc(d.subject)}</p>${bodyHtml(d.body)}`;
+}
+const draftBlockText = d => `${d.p.name}${d.p.org?' — '+d.p.org:''}\nTo: ${d.p.email||'(no email on file)'}\nSubject: ${d.subject}\n\n${d.body}`;
+async function copyRich(html, text){
+  try{
+    if(window.ClipboardItem && navigator.clipboard?.write){
+      await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html],{type:'text/html'}), 'text/plain': new Blob([text],{type:'text/plain'})})]);
+    } else { await navigator.clipboard.writeText(text); }
+    return true;
+  }catch(e){
+    try{ await navigator.clipboard.writeText(text); return true; }catch(e2){ return false; }
+  }
+}
+// Log any number of sent emails with two requests total
+async function markSentMany(drafts){
+  const rows = drafts.map(d=>({workspace_id:S.ws.id, person_id:d.p.id, kind:'email', flow:'outbound', occurred_on:today(), summary:`Sent ${TEMPLATES[d.tpl].short} email: "${d.subject}"`, logged_by:ME()}));
+  const {data, error} = await sb.from('ct_interactions').insert(rows).select();
+  if(error){ fail(error); return 0; }
+  S.interactions.unshift(...data);
+  const ids = drafts.filter(d=>TEMPLATES[d.tpl].moves).flatMap(d=>openCommitsFor(d.p.id).filter(c=>c.status==='committed').map(c=>c.id));
+  return updateCommits(ids, {status:'reached_out'});
+}
+
+// Two clear steps: copy the drafts, then open a blank Google Doc and paste.
+function toGoogleDoc(drafts, titleLine){
+  const n = drafts.length;
+  const html = (titleLine?`<h1>${esc(titleLine)}</h1>`:'') + drafts.map(draftBlockHtml).join('<hr>');
+  const text = drafts.map(draftBlockText).join('\n\n— — —\n\n');
+  const hasBrackets = drafts.some(d=>/\[[^\]]+\]/.test(d.body));
+  modal(`${head('Review in Google Doc', `${n} draft${n>1?'s':''} · ${esc(TEMPLATES[drafts[0].tpl].label)}`)}
+    <ol class="steps">
+      <li><button class="btn primary" id="hcopy">Copy the draft${n>1?'s':''}</button> <span class="small muted" id="hcopied"></span></li>
+      <li><button class="btn" id="hopen">Open a blank Google Doc</button> <span class="small muted">then click inside it and press <b>⌘V</b> (Mac) or <b>Ctrl+V</b> (Windows)</span></li>
+      <li class="small">Review and edit in the doc${hasBrackets?' — fill in anything in <b>[brackets]</b>':''}, then copy each email into your own mail and send it.</li>
+      <li><button class="btn" id="hsent">Mark ${n>1?`all ${n}`:'it'} as sent</button> <span class="small muted">after you’ve sent ${n>1?'them':'it'}${TEMPLATES[drafts[0].tpl].moves?' — moves untouched commitments to Reached out':''}</span></li>
+    </ol>
+    <div class="hr"></div>
+    <div class="small muted" style="margin-bottom:6px">Preview of what gets copied:</div>
+    <div class="docprev">${html}</div>`);
+  $('#hcopy').onclick = async () => {
+    const ok = await copyRich(`<div>${html}</div>`, text);
+    $('#hcopied').textContent = ok ? '✓ Copied' : 'Couldn’t copy — select the preview below and copy it by hand';
+    if(ok){ $('#hopen').classList.add('primary'); $('#hcopy').classList.remove('primary'); }
+  };
+  $('#hopen').onclick = () => { if(!window.open('https://docs.new','_blank')) toast('Your browser blocked the new tab — go to docs.new'); };
+  $('#hsent').onclick = async () => {
+    if(!confirm(`Log ${n>1?`${n} emails`:'this email'} as sent?`)) return;
+    const moved = await markSentMany(drafts);
+    closeModal(); route(); toast(`Logged ${n}${moved?` · ${moved} moved to Reached out`:''}`);
+  };
+}
+
+const tplPicker = (cur, name) => `<div class="checks tplpick">${Object.entries(TEMPLATES).map(([k,t])=>`<label><input type="radio" name="${name}" value="${k}" ${k===cur?'checked':''}>${esc(t.label)}</label>`).join('')}</div>`;
+
+function openDraft(pid, tpl){
+  tpl = tpl || suggestTemplate(pid);
+  const d = draftFor(pid, tpl);
+  modal(`${head('Email draft', esc(d.p.name))}
+    <label class="f">Template</label>${tplPicker(tpl,'dtpl')}
+    <label class="f" for="dsub">Subject</label><input id="dsub" type="text" value="${esc(d.subject)}">
+    <label class="f" for="dbody">Message</label><textarea id="dbody" style="min-height:320px">${esc(d.body)}</textarea>
+    <div class="btns" style="margin-top:14px">
+      <button class="btn primary" id="ddoc">Review in Google Doc</button>
+      <button class="btn" id="dcopy">Copy text</button>
+    </div>
+    <p class="tiny muted">${d.p.email?`To: ${esc(d.p.email)}`:'No email on file — add one on the person page.'}${/\[[^\]]+\]/.test(d.body)?' · Fill in anything in [brackets].':''}</p>`);
+  let dirty = false;
+  $('#dbody').oninput = $('#dsub').oninput = () => dirty = true;
+  document.querySelectorAll('input[name=dtpl]').forEach(r=>r.onchange = () => {
+    if(dirty && !confirm('Switch template? Your edits to this draft will be replaced.')){ document.querySelector(`input[name=dtpl][value=${tpl}]`).checked = true; return; }
+    openDraft(pid, r.value);
+  });
+  const cur = () => ({...d, subject:$('#dsub').value, body:$('#dbody').value});
+  $('#ddoc').onclick = () => toGoogleDoc([cur()]);
+  $('#dcopy').onclick = async () => { const c = cur(); toast(await copyRich(bodyHtml(c.body), c.body) ? 'Copied' : 'Copy failed — select the text and copy manually'); };
+}
+
+// Several people at once → one Google Doc
+function openBatchDrafts(tpl){
+  tpl = tpl || 'first';
+  const people = S.people.filter(BATCH_FILTER[tpl]).sort((a,b)=>a.name.localeCompare(b.name));
+  const who = {first:'have commitments not yet followed up', nudge:'were contacted but haven’t replied', bigsur: BATCH_INVITE ? 'either committed to Big Sur or haven\u2019t been asked yet (they get the invitation version)' : 'have an open Big Sur commitment', thanks:'have an outcome recorded'}[tpl];
+  modal(`${head('Batch emails')}
+    <label class="f">Template</label>${tplPicker(tpl,'btpl')}
+    ${tpl==='bigsur'?`<label class="small" style="display:flex;gap:6px;align-items:center;margin:8px 0"><input type="checkbox" id="binvite" ${BATCH_INVITE?'checked':''}> Also invite people from the room who haven\u2019t been asked</label>`:''}
+    <p class="small muted">${people.length} ${people.length===1?'person':'people'} ${who}. Tick who to include; the next screen shows every draft and walks you through putting them into one Google Doc.</p>
+    ${people.length?`<div class="btns" style="margin-bottom:8px"><button class="btn sm" id="ball">All</button><button class="btn sm" id="bnone">None</button>
+      <label class="small" style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="checkbox" id="bmine"> Only ones I own</label></div>
+    <div class="list card" id="blist">${people.map(p=>{ const own = p.owner_email ? [p.owner_email] : [];
+      return `<label class="li" style="cursor:pointer" data-owners="${esc(own.join(','))}"><input type="checkbox" value="${p.id}" ${tpl==='bigsur' && !bigSurCommits(p.id).length ? '' : 'checked'} style="margin-top:4px"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}<div class="tiny muted">${openCommitsFor(p.id).length} open commitment${openCommitsFor(p.id).length===1?'':'s'}${own.length?' · '+esc([...new Set(own)].map(ownerName).join(', ')):''}${p.email?'':' · no email'}</div></div></label>`; }).join('')}</div>
+    <div class="btns" style="margin-top:14px"><button class="btn primary" id="bdoc">Next: prepare drafts</button></div>`
+    : '<div class="card pad small muted">No one fits this template right now.</div>'}`);
+  document.querySelectorAll('input[name=btpl]').forEach(r=>r.onchange = () => openBatchDrafts(r.value));
+  if($('#binvite')) $('#binvite').onchange = e => { BATCH_INVITE = e.target.checked; openBatchDrafts('bigsur'); };
+  if(!people.length) return;
+  const boxes = () => [...document.querySelectorAll('#blist input')];
+  $('#ball').onclick = () => boxes().forEach(b=>b.checked=true);
+  $('#bnone').onclick = () => boxes().forEach(b=>b.checked=false);
+  $('#bmine').onchange = e => boxes().forEach(b=>{ const owners = b.closest('label').dataset.owners.split(',').filter(Boolean); b.checked = !e.target.checked || owners.includes(ME()); });
+  $('#bdoc').onclick = () => {
+    const ids = boxes().filter(b=>b.checked).map(b=>b.value); if(!ids.length) return toast('Pick at least one person');
+    toGoogleDoc(ids.map(id=>draftFor(id, tpl)), `CPTA ${TEMPLATES[tpl].short} emails — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}`);
+  };
+}
+
+/* ===== Start ===== */
+boot();
+</script>
+</body>
+</html>
