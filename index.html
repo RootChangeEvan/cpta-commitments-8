@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://qkedzkejcxurlbvgrejn.supabase.co" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap"></noscript>
 <style>
 :root{
   --bg:#f6f3ec; --surface:#fffdf8; --surface-2:#f0ebe0; --line:#e1d9c8; --line-strong:#cbbfa7;
@@ -130,6 +130,57 @@ label.f{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin:1
 .owner{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);font-size:11px;font-weight:600;margin-left:auto}
 .overdue{color:var(--danger);font-weight:600}
 .cc-top{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.cc{position:relative}
+.cc.has-note{margin-top:14px}
+:root{--note:#fbe38a;--note-ink:#4a3b06;--note-edge:#e9c94e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--note:#e8cd63;--note-ink:#2e2504;--note-edge:#c9ab3d}}
+:root[data-theme="dark"]{--note:#e8cd63;--note-ink:#2e2504;--note-edge:#c9ab3d}
+.sticky{display:block;width:calc(100% + 6px);margin:-22px -3px 8px 0;padding:6px 9px 7px;border:0;border-radius:2px 2px 2px 10px;background:var(--note);color:var(--note-ink);
+  text-align:left;cursor:pointer;transform:rotate(-1.2deg);box-shadow:0 2px 5px rgba(0,0,0,.18);font:600 15px/1.15 Caveat,'Segoe Print','Bradley Hand',cursive;position:relative}
+.sticky::before{content:"";position:absolute;top:-6px;left:50%;width:34px;height:11px;margin-left:-17px;background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.06);transform:rotate(2deg)}
+.sticky span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sticky:hover{transform:rotate(0) scale(1.02)}
+.addnote{border:1px dashed var(--note-edge);background:transparent;color:var(--ink-3);border-radius:6px;font-size:11.5px;padding:1px 7px;cursor:pointer;opacity:0;transition:opacity .15s}
+.cc:hover .addnote,.addnote:focus{opacity:1}
+@media (hover:none){.addnote{opacity:.8}}
+.addnote.big{opacity:1;font-size:13px;padding:6px 10px;margin:0 0 10px}
+.note-block{background:var(--note);color:var(--note-ink);border-radius:2px 2px 2px 12px;padding:10px 12px;margin:0 0 12px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15);font:600 18px/1.2 Caveat,'Segoe Print',cursive;white-space:pre-wrap}
+.note-block .tiny{font-family:Inter,system-ui,sans-serif;font-weight:500;opacity:.75;margin-top:4px}
+.note-line{background:var(--note);color:var(--note-ink);display:inline-block;margin-top:4px;padding:1px 7px;border-radius:2px 2px 2px 7px;font:600 14px/1.25 Caveat,cursive;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duechip{border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);border-radius:999px;font-size:11.5px;padding:1px 8px;cursor:pointer;font-weight:500}
+.duechip.overdue{background:color-mix(in srgb,var(--danger) 14%,transparent);border-color:transparent;color:var(--danger);font-weight:600}
+.duechip.soon{background:color-mix(in srgb,var(--s-reached) 18%,transparent);border-color:transparent;color:var(--ink)}
+.duechip.ghost{border-style:dashed;background:transparent;color:var(--ink-3);opacity:0;transition:opacity .15s}
+.cc:hover .duechip.ghost,.duechip.ghost:focus{opacity:1}
+@media (hover:none){.duechip.ghost{opacity:.8}}
+.pop{position:absolute;z-index:70;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:10px;width:min(280px,calc(100vw - 16px))}
+.pop-h{font-size:12px;font-weight:600;color:var(--ink-2);margin:2px 4px 8px}
+.pop-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:0;border-radius:8px;padding:7px 8px;font-size:13.5px;cursor:pointer;color:var(--ink)}
+.pop-item:hover{background:var(--surface-2)}
+.pop-item .muted{margin-left:auto;font-size:12px}
+.pop-item.strong{font-weight:600;color:var(--s-realized)}
+.sticky-pop{width:min(320px,calc(100vw - 16px));background:var(--note);border-color:var(--note-edge);color:var(--note-ink)}
+.sticky-pop .pop-h{color:var(--note-ink)}
+.sticky-pop textarea{background:rgba(255,255,255,.55);border-color:var(--note-edge);color:var(--note-ink);font:600 18px/1.25 Caveat,'Segoe Print',cursive;min-height:110px}
+.sticky-pop .muted{color:var(--note-ink);opacity:.75}
+.sticky-pop .btn{background:rgba(255,255,255,.6);border-color:var(--note-edge);color:var(--note-ink)}
+.sticky-pop .btn.primary{background:var(--note-ink);border-color:var(--note-ink);color:var(--note)}
+.sticky-pop .btn.ghost{background:transparent;border-color:transparent}
+.bsrow{align-items:center}
+.bsright{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.hc{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);overflow:hidden}
+.hc button{border:0;background:transparent;width:30px;height:30px;font-size:17px;cursor:pointer;color:var(--ink)}
+.hc button:hover{background:var(--surface-2)}
+.hc input{width:42px;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;text-align:center;padding:4px 0;font-weight:600;-moz-appearance:textfield}
+.hc input::-webkit-outer-spin-button,.hc input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hc .hc-clear{width:auto;padding:0 10px;font-size:12px;color:var(--ink-3);border-left:1px solid var(--line)}
+.hc-who{margin:6px 0 4px;padding:5px 8px;font-size:13px;max-width:460px}
+.bs-chip{background:color-mix(in srgb,var(--s-realized) 16%,transparent);border-color:transparent;color:var(--ink);font-weight:600}
+.duequick{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.chipbtn{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;font-size:12px;padding:3px 10px;cursor:pointer}
+.chipbtn:hover{border-color:var(--ink-3)}
+.toast{display:flex;align-items:center;gap:12px}
+.toast-act{background:transparent;border:1px solid currentColor;color:inherit;border-radius:6px;padding:3px 9px;font-size:13px;cursor:pointer}
 .cc .owner{margin-left:0;flex:none}
 .cc .next{font-size:12.5px;font-weight:600;margin:6px 0 2px;color:var(--ink)}
 .clist{list-style:none;margin:6px 0 8px;padding:0;display:flex;flex-direction:column;gap:4px}
@@ -152,7 +203,7 @@ label.f{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin:1
 .tstats b{font-family:Fraunces,Georgia,serif;font-size:22px;line-height:1.1}
 .tstats span{font-size:12px;color:var(--ink-2)}
 .tg-h{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);margin:16px 0 6px}
-@media (max-width:900px){.tgrid{grid-template-columns:1fr}}
+@media (max-width:640px){.tgrid{grid-template-columns:1fr}}
 /* people */
 .ptable{width:100%;border-collapse:collapse}
 .ptable th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -277,10 +328,28 @@ function stageOf(pid){
 }
 const followPeople = () => S.people.filter(p=>commitsOf(p.id).length);
 const isOverdueP = p => p.due_date && p.due_date < today() && !['realized','stalled'].includes(stageOf(p.id));
+const showsDue = p => !!p.due_date && !['realized','stalled'].includes(stageOf(p.id));
+function dueInfo(d){
+  const days = Math.round((new Date(d+'T12:00:00') - new Date(today()+'T12:00:00'))/864e5);
+  if(days < 0) return {t: days===-1 ? '1 day overdue' : `${-days} days overdue`, cls:'overdue'};
+  if(days === 0) return {t:'Due today', cls:'soon'};
+  if(days === 1) return {t:'Due tomorrow', cls:'soon'};
+  if(days < 7) return {t:'Due ' + new Date(d+'T12:00:00').toLocaleDateString(undefined,{weekday:'short'}), cls:''};
+  return {t:'Due ' + fmtDate(d), cls:'later'};
+}
+const dueText = p => showsDue(p) ? `<span class="${dueInfo(p.due_date).cls==='overdue'?'overdue':''}">${esc(dueInfo(p.due_date).t)}</span>` : '';
+const relTime = ts => { if(!ts) return ''; const d = new Date(ts), mins = (Date.now()-d)/6e4;
+  if(mins < 60) return 'just now'; if(mins < 1440) return `${Math.round(mins/60)}h ago`;
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); };
 const stageChip = st => st ? `<span class="chip st-${st}"><span class="dot c"></span>${esc(STAGE_L[st])}</span>` : '';
 const ownerChip = email => email ? `<span class="owner" title="${esc(ownerName(email))}">${esc(initials(email))}</span>` : `<span class="chip unassigned">Unassigned</span>`;
 const lastTouch = pid => S.interactions.filter(i=>i.person_id===pid).map(i=>i.occurred_on).sort().pop();
-function toast(msg){ document.querySelectorAll('.toast').forEach(x=>x.remove()); const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+function toast(msg, action){
+  document.querySelectorAll('.toast').forEach(x=>x.remove());
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  if(action){ const b=document.createElement('button'); b.className='toast-act'; b.textContent=action.label; b.onclick=()=>{ t.remove(); action.fn(); }; t.appendChild(b); }
+  document.body.appendChild(t); setTimeout(()=>t.remove(), action?6000:2600);
+}
 function fail(e){ console.error(e); toast('Something went wrong: ' + (e?.message || e)); }
 const statusChip = s => `<span class="chip st-${s}"><span class="dot c"></span>${esc(STATUS_L[s])}</span>`;
 const strengthChip = s => `<span class="chip strength str-${s}">${esc(STRENGTH_L[s])}</span>`;
@@ -318,7 +387,7 @@ async function boot(){
 }
 
 // --- 3: lists load lean; bios come separately ---
-const PEOPLE_COLS = 'id,workspace_id,name,org,title,email,geography,met_at_event,introduced_by,notes,sector,ncc_visits,owner_email,next_action,due_date,created_at,updated_at';
+const PEOPLE_COLS = 'id,workspace_id,name,org,title,email,geography,met_at_event,introduced_by,notes,sector,ncc_visits,owner_email,next_action,due_date,note,note_updated_at,note_by,bigsur_count,bigsur_who,created_at,updated_at';
 async function loadAll(withWs){
   const w = WORKSPACE_ID;
   const q = (t, cols='*') => sb.from(t).select(cols).eq('workspace_id', w);
@@ -454,7 +523,7 @@ function renderLedger(){
         <div class="card list">${urgent.length ? urgent.map(p=>`
           <div class="li click" onclick="openPersonCard('${p.id}')">
             <div class="grow"><div class="small"><b>${esc(p.name)}</b>${p.next_action?' · '+esc(p.next_action):''}</div>
-            <div class="tiny muted"><span class="${isOverdueP(p)?'overdue':''}">Due ${fmtDate(p.due_date)}</span> · ${esc(ownerName(p.owner_email))}</div></div>
+            <div class="tiny muted">${dueText(p)} · ${esc(ownerName(p.owner_email))}</div></div>
             ${stageChip(stageOf(p.id))}
           </div>`).join('') : `<div class="li muted small">Nothing overdue or due this week.</div>`}
         </div>
@@ -536,13 +605,18 @@ function renderBoard(){
 function personCardHtml(p){
   const cs = commitsOf(p.id);
   const done = cs.filter(c=>c.status==='realized').length;
-  return `<div class="cc" draggable="true" data-id="${p.id}" onclick="openPersonCard('${p.id}')">
+  const open = !['realized','stalled'].includes(stageOf(p.id));
+  return `<div class="cc ${p.note?'has-note':''}" draggable="true" data-id="${p.id}" onclick="openPersonCard('${p.id}')">
+    ${p.note?`<button class="sticky" title="Sticky note — click to read or edit" onclick="event.stopPropagation();openSticky(this,'${p.id}')"><span>${esc(p.note)}</span></button>`:''}
     <div class="cc-top"><div><div class="who">${esc(p.name)}</div><div class="org">${esc(p.org||'')}</div></div>${ownerChip(p.owner_email)}</div>
     ${p.next_action?`<div class="next">Next: ${esc(p.next_action)}</div>`:''}
     <ul class="clist">${cs.map(c=>`<li class="st-${c.status}" title="${esc(STATUS_L[c.status])}"><i class="dot c"></i><span class="${c.status==='realized'?'done':c.status==='declined'?'struck':''}">${esc(c.text)}</span></li>`).join('')}</ul>
     <div class="meta">
-      ${p.due_date?`<span class="tiny ${isOverdueP(p)?'overdue':'muted'}">Due ${fmtDate(p.due_date)}</span>`:''}
+      ${showsDue(p)?`<button class="duechip ${dueInfo(p.due_date).cls}" title="Change or clear the due date" onclick="event.stopPropagation();openDueMenu(this,'${p.id}')">${esc(dueInfo(p.due_date).t)}</button>`
+        : open?`<button class="duechip ghost" onclick="event.stopPropagation();openDueMenu(this,'${p.id}')">+ due date</button>`:''}
+      ${p.bigsur_count>0?`<span class="chip bs-chip" title="${esc(p.bigsur_who||'Coming to Big Sur')}">Big Sur: ${p.bigsur_count}</span>`:p.bigsur_count===0?'<span class="chip">Not at Big Sur</span>':''}
       ${done?`<span class="tiny muted">${done}/${cs.length} done</span>`:''}
+      ${p.note?'':`<button class="addnote" title="Add a sticky note" onclick="event.stopPropagation();openSticky(this,'${p.id}')">+ note</button>`}
     </div>
   </div>`;
 }
@@ -560,7 +634,11 @@ function wireDnD(){
       if(!p || stageOf(pid)===target) return;
       if(target==='realized' && !confirm(`Mark all of ${p.name}’s open commitments as done? To mark just one, click the card instead.`)) return;
       const n = await setStage(pid, target);
-      renderBoard(); toast(`${p.name}: ${STAGE_L[target]}${n>1?` (${n} commitments)`:''}`);
+      const hadDue = !!p.due_date;
+      if(hadDue) await updatePerson(pid, {due_date:null});
+      renderBoard();
+      toast(`${p.name}: ${STAGE_L[target]}${n>1?` (${n} commitments)`:''}${hadDue?' · old due date cleared':''}`,
+            ['realized','stalled'].includes(target) ? null : {label:'Set next step', fn:()=>openPersonCard(pid)});
     });
   });
 }
@@ -579,7 +657,7 @@ function renderTeam(){
     const done = cs.filter(c=>c.status==='realized').length;
     const bar = ps.length ? Object.keys(STAGE_L).map(k=>{ const n=byStage(k).length; return n?`<span class="st-${k}" style="width:${n/ps.length*100}%" title="${STAGE_L[k]}: ${n}"></span>`:''; }).join('') : '';
     const row = p => `<div class="li click" onclick="openPersonCard('${p.id}')"><div class="grow"><div class="small"><b>${esc(p.name)}</b> <span class="tiny muted">${esc(p.org||'')}</span></div>
-      <div class="tiny muted">${p.next_action?esc(p.next_action):'<i>No next step set</i>'}${p.due_date?` · <span class="${isOverdueP(p)?'overdue':''}">due ${fmtDate(p.due_date)}</span>`:''}</div></div>${stageChip(stageOf(p.id))}</div>`;
+      <div class="tiny muted">${p.next_action?esc(p.next_action):'<i>No next step set</i>'}${showsDue(p)?' · '+dueText(p):''}</div>${p.note?`<div class="note-line" onclick="event.stopPropagation();openSticky(this,'${p.id}')">${esc(p.note)}</div>`:''}</div>${stageChip(stageOf(p.id))}</div>`;
     const sortDue = (a,b)=>(a.due_date||'9').localeCompare(b.due_date||'9') || a.name.localeCompare(b.name);
     const group = (title, list) => list.length ? `<div class="tg-h">${title} <span class="muted">${list.length}</span></div><div class="card list">${list.sort(sortDue).map(row).join('')}</div>` : '';
     const name = email ? ownerName(email) : 'Unassigned';
@@ -608,6 +686,56 @@ function renderTeam(){
   document.querySelectorAll('.seg button').forEach(b=>b.onclick = () => { TF.view = b.dataset.v; renderTeam(); });
 }
 
+/* ===== Small pop-ups anchored to a card ===== */
+function closePop(){ document.querySelectorAll('.pop').forEach(x=>x.remove()); document.removeEventListener('mousedown', popOutside, true); document.removeEventListener('keydown', popEsc); }
+function popOutside(e){ if(!e.target.closest('.pop')) closePop(); }
+function popEsc(e){ if(e.key==='Escape') closePop(); }
+function popover(anchor, html, cls=''){
+  closePop();
+  const el = document.createElement('div'); el.className = 'pop ' + cls; el.innerHTML = html; document.body.appendChild(el);
+  const r = anchor.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+  let left = Math.min(Math.max(8, r.left + window.scrollX), window.scrollX + innerWidth - w - 8);
+  let top = r.bottom + window.scrollY + 6;
+  if(r.bottom + h + 12 > innerHeight && r.top - h - 6 > 0) top = r.top + window.scrollY - h - 6;
+  el.style.left = left + 'px'; el.style.top = top + 'px';
+  setTimeout(()=>{ document.addEventListener('mousedown', popOutside, true); document.addEventListener('keydown', popEsc); }, 0);
+  return el;
+}
+function rerender(){ if($('#modalRoot').innerHTML && document.querySelector('.drawer [data-pid]')) openPersonCard(document.querySelector('.drawer [data-pid]').dataset.pid); route(); }
+function openDueMenu(anchor, pid){
+  const p = person(pid);
+  const opts = [['Tomorrow',1],['In 3 days',3],['Next week',7],['In 2 weeks',14]];
+  const el = popover(anchor, `
+    <div class="pop-h">Due date${p.due_date?` · <span class="muted">${esc(dueInfo(p.due_date).t)}</span>`:''}</div>
+    ${p.due_date?`<button class="pop-item strong" data-clear>✓ Done — clear the date</button>`:''}
+    ${opts.map(([l,n])=>`<button class="pop-item" data-days="${n}">${l} <span class="muted">${fmtDate(addDays(today(),n))}</span></button>`).join('')}
+    <label class="pop-item" style="cursor:default">Pick a date <input type="date" id="popdate" value="${esc(p.due_date||'')}" style="width:auto;margin-left:auto;padding:3px 6px"></label>`);
+  const set = async v => { closePop(); if(await updatePerson(pid,{due_date:v})){ route(); toast(v?`${p.name}: ${dueInfo(v).t.toLowerCase()}`:`${p.name}: due date cleared`); } };
+  el.querySelectorAll('[data-days]').forEach(b=>b.onclick = () => set(addDays(today(), +b.dataset.days)));
+  if(el.querySelector('[data-clear]')) el.querySelector('[data-clear]').onclick = () => set(null);
+  el.querySelector('#popdate').onchange = e => e.target.value && set(e.target.value);
+}
+function openSticky(anchor, pid){
+  const p = person(pid);
+  const el = popover(anchor, `
+    <div class="pop-h">Sticky note · ${esc(p.name)}</div>
+    <textarea id="stx" placeholder="Quick status — e.g. Said yes to Big Sur; waiting on name of his research partner">${esc(p.note||'')}</textarea>
+    <div class="tiny muted" style="margin:4px 0 8px">${p.note?`Updated ${relTime(p.note_updated_at)}${p.note_by?' by '+esc(ownerName(p.note_by).split(' ')[0]):''}. Earlier notes stay in the timeline.`:'Shows on the card at a glance. Each saved note is also kept in the timeline.'}</div>
+    <div class="btns"><button class="btn primary sm" id="ssave">Save note</button>${p.note?'<button class="btn sm" id="sclear">Remove</button>':''}<button class="btn ghost sm push" id="scancel">Cancel</button></div>`, 'sticky-pop');
+  const ta = el.querySelector('#stx'); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  const save = async note => {
+    closePop();
+    const ok = await updatePerson(pid, {note, note_updated_at: note ? new Date().toISOString() : null, note_by: note ? ME() : null});
+    if(!ok) return;
+    if(note){ const row = await insert('ct_interactions', {person_id:pid, kind:'note', flow:'internal', occurred_on:today(), summary:'Sticky note: '+note, logged_by:ME()}); if(row) S.interactions.unshift(row); }
+    rerender(); toast(note ? 'Note saved' : 'Note removed');
+  };
+  el.querySelector('#ssave').onclick = () => { const v = ta.value.trim(); if(v === (p.note||'')) return closePop(); save(v || null); };
+  ta.onkeydown = e => { if(e.key==='Enter' && (e.metaKey||e.ctrlKey)) el.querySelector('#ssave').click(); };
+  if(el.querySelector('#sclear')) el.querySelector('#sclear').onclick = () => save(null);
+  el.querySelector('#scancel').onclick = closePop;
+}
+
 /* ===== Person card (drawer) ===== */
 function followupFields(p){
   const st = stageOf(p.id);
@@ -618,7 +746,14 @@ function followupFields(p){
     <div class="row">
       <div style="flex:2 1 240px"><label class="f" for="funext">Next step</label><input id="funext" type="text" value="${esc(p.next_action||'')}" placeholder="e.g. Set up 1-hr call"></div>
       <div><label class="f" for="fudue">Due</label><input id="fudue" type="date" value="${esc(p.due_date||'')}"></div>
-    </div>`;
+    </div>
+    <div class="duequick"><span class="tiny muted">Due:</span>${[['Tomorrow',1],['In 3 days',3],['Next week',7],['In 2 weeks',14]].map(([l,n])=>`<button type="button" class="chipbtn" data-days="${n}">${l}</button>`).join('')}<button type="button" class="chipbtn" data-days="">No date</button><span class="tiny muted" id="fuhint"></span></div>`;
+}
+function wireFollowup(p){
+  document.querySelectorAll('.duequick [data-days]').forEach(b=>b.onclick = () => { $('#fudue').value = b.dataset.days==='' ? '' : addDays(today(), +b.dataset.days); $('#fuhint').textContent=''; });
+  if($('#fustage')) $('#fustage').onchange = () => {
+    if(p.due_date && $('#fudue').value === p.due_date){ $('#fudue').value = ''; $('#fuhint').textContent = 'Old due date cleared — that step is done. Set a new one?'; }
+  };
 }
 async function saveFollowup(p){
   const patch = {owner_email:$('#fuown').value||null, next_action:$('#funext').value.trim()||null, due_date:$('#fudue').value||null};
@@ -629,7 +764,10 @@ async function saveFollowup(p){
 function openPersonCard(pid){
   const p = person(pid), cs = commitsOf(pid);
   modal(`${head(esc(p.name), `${esc([p.title,p.org].filter(Boolean).join(', '))} · <a href="#person/${p.id}" onclick="closeModal()">Open full page</a>`)}
-    <h3 style="margin-top:6px">Follow-up</h3>
+    <div data-pid="${p.id}"></div>
+    ${p.note?`<div class="note-block" onclick="openSticky(this,'${p.id}')"><div>${esc(p.note)}</div><div class="tiny">${relTime(p.note_updated_at)}${p.note_by?' · '+esc(ownerName(p.note_by).split(' ')[0]):''} · click to edit</div></div>`
+      :`<button class="addnote big" onclick="openSticky(this,'${p.id}')">+ Add a sticky note</button>`}
+    <h3 style="margin-top:10px">Follow-up</h3>
     ${followupFields(p)}
     <div class="btns" style="margin-top:12px"><button class="btn primary" id="fusave">Save</button>
       <button class="btn" onclick="openDraft('${pid}')">Draft email</button><button class="btn" onclick="openLog('${pid}')">Log a touch</button><button class="btn" onclick="openOutcome('${pid}')">+ Outcome</button></div>
@@ -638,6 +776,7 @@ function openPersonCard(pid){
     <div class="card">${commitRows(cs)}</div>
     <p class="tiny muted">Change one commitment’s status here (for example, mark one done) without moving the others.</p>`);
   $('#fusave').onclick = async () => { if(await saveFollowup(p)){ closeModal(); route(); toast('Saved'); } };
+  wireFollowup(p);
   wireQuickStatus(() => openPersonCard(pid));
 }
 function commitRows(cs){
@@ -729,6 +868,8 @@ function renderPerson(id){
 
     <div class="section two">
       <div>
+        ${p.note?`<div class="note-block" onclick="openSticky(this,'${p.id}')"><div>${esc(p.note)}</div><div class="tiny">${relTime(p.note_updated_at)}${p.note_by?' · '+esc(ownerName(p.note_by).split(' ')[0]):''} · click to edit</div></div>`
+          :`<button class="addnote big" onclick="openSticky(this,'${p.id}')">+ Add a sticky note</button>`}
         ${cs.length?`<div class="card pad fu-panel"><h3>Follow-up</h3>${followupFields(p)}<div style="margin-top:12px"><button class="btn primary sm" id="fusave">Save follow-up</button></div></div>`:''}
         <div class="section-head" style="margin-top:20px"><h3>Commitments</h3><button class="btn sm" onclick="openNewCommit('${id}')">+ Add</button></div>
         <div class="card">${commitRows(cs)}</div>
@@ -746,6 +887,7 @@ function renderPerson(id){
     </div>`;
   wireQuickStatus(() => renderPerson(id));
   if($('#fusave')) $('#fusave').onclick = async () => { if(await saveFollowup(p)){ renderPerson(id); toast('Follow-up saved'); } };
+  if($('#fusave')) wireFollowup(p);
 }
 
 /* ===== Big Sur ===== */
@@ -753,32 +895,79 @@ function renderBigSur(){
   const bsAsk = S.asks.find(a=>a.code==='bigsur');
   const ev = S.events.find(e=>/big sur/i.test(e.name)) || {};
   const days = ev.starts_on ? Math.round((new Date(ev.starts_on+'T12:00:00') - new Date(today()+'T12:00:00'))/86400000) : null;
-  const cs = bsAsk ? S.commits.filter(c=>S.cAsks.get(c.id)?.has(bsAsk.id)) : [];
-  const attendIds = new Set(cs.map(c=>c.person_id));
-  const confirmed = cs.filter(c=>['responded','in_progress','realized'].includes(c.status));
-  const group = (title, list, note) => `<div class="section-head" style="margin-top:20px"><h3>${title}</h3><span class="small muted">${note}</span></div>
-    <div class="card list">${list.length ? list.map(c=>`<div class="li click" onclick="openCommit('${c.id}')">
-      <div class="grow"><b class="small">${esc(person(c.person_id)?.name)}</b> <span class="tiny muted">${esc(person(c.person_id)?.org||'')}</span><div class="small">${esc(c.text)}</div>
-      <div class="tiny muted">${esc(ownerName(person(c.person_id)?.owner_email))}${person(c.person_id)?.next_action?' · '+esc(person(c.person_id).next_action):''}</div></div>${statusChip(c.status)}</div>`).join('') : '<div class="li small muted">None</div>'}</div>`;
-  const notAsked = S.people.filter(p=>!attendIds.has(p.id)).sort((a,b)=>a.name.localeCompare(b.name));
-  const naCommitted = notAsked.filter(p=>commitsOf(p.id).length || p.introduced_by);
+  const bsCs = pid => bsAsk ? commitsOf(pid).filter(c=>S.cAsks.get(c.id)?.has(bsAsk.id) && c.status!=='declined') : [];
+  const hasCount = p => p.bigsur_count !== null && p.bigsur_count !== undefined;
+  const byName = (a,b)=>a.name.localeCompare(b.name);
+  const yes = S.people.filter(p=>hasCount(p) && p.bigsur_count>0).sort(byName);
+  const notComing = S.people.filter(p=>hasCount(p) && p.bigsur_count===0).sort(byName);
+  const unconfirmed = S.people.filter(p=>!hasCount(p) && bsCs(p.id).length).sort((a,b)=>{
+    const f = p => bsCs(p.id).some(c=>c.strength==='firm') ? 0 : 1; return f(a)-f(b) || byName(a,b); });
+  const decided = new Set([...yes, ...notComing, ...unconfirmed].map(p=>p.id));
+  const notAsked = S.people.filter(p=>!decided.has(p.id)).sort(byName);
+  const naEngaged = notAsked.filter(p=>commitsOf(p.id).length || p.introduced_by);
   const naRoom = notAsked.filter(p=>!commitsOf(p.id).length && !p.introduced_by && p.sector!=='Hosts');
-  const naRow = p => `<div class="li click" onclick="location.hash='person/${p.id}'"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}${p.introduced_by?` <span class="tiny muted">(via ${esc(person(p.introduced_by)?.name)})</span>`:''}</div>${p.sector?`<span class="chip">${esc(p.sector)}</span>`:''}</div>`;
+  const coming = yes.reduce((n,p)=>n+p.bigsur_count, 0);
+
+  const counter = p => `<div class="hc" onclick="event.stopPropagation()" title="Number of people coming from this contact. 0 = not coming; clear = unconfirmed.">
+      <button type="button" data-hc="${p.id}" data-d="-1" aria-label="One fewer">−</button>
+      <input type="number" min="0" inputmode="numeric" data-hci="${p.id}" value="${hasCount(p)?p.bigsur_count:''}" placeholder="?" aria-label="How many coming">
+      <button type="button" data-hc="${p.id}" data-d="1" aria-label="One more">+</button>
+      ${hasCount(p)?`<button type="button" class="hc-clear" data-hcclear="${p.id}" title="Back to unconfirmed">clear</button>`:''}
+    </div>`;
+  const row = (p, opts={}) => {
+    const cs = bsCs(p.id), firm = cs.some(c=>c.strength==='firm');
+    return `<div class="li click bsrow" onclick="openPersonCard('${p.id}')">
+      <div class="grow">
+        <div class="small"><b>${esc(p.name)}</b> <span class="tiny muted">${esc(p.org||'')}</span>${p.introduced_by?` <span class="tiny muted">(via ${esc(person(p.introduced_by)?.name)})</span>`:''}</div>
+        ${cs.length?`<div class="tiny muted">${cs.map(c=>esc(c.text)).join(' · ')}</div>`:''}
+        ${opts.who?`<input type="text" class="hc-who" data-hcwho="${p.id}" value="${esc(p.bigsur_who||'')}" placeholder="Who’s coming? e.g. two colleagues from his firm" onclick="event.stopPropagation()">`:''}
+        <div class="tiny muted">${esc(ownerName(p.owner_email))}${p.next_action?' · '+esc(p.next_action):''}</div>
+      </div>
+      <div class="bsright">${opts.chip && cs.length?`<span class="chip strength str-${firm?'firm':'conditional'}">${firm?'Said yes in Atlanta':'Maybe'}</span>`:''}${counter(p)}</div>
+    </div>`;
+  };
+  const section = (title, note, list, opts) => `<div class="section-head" style="margin-top:22px"><h3>${title} <span class="muted small">${list.length}</span></h3><span class="small muted">${note}</span></div>
+    <div class="card list">${list.length ? list.map(p=>row(p,opts)).join('') : '<div class="li small muted">None yet</div>'}</div>`;
+
   $('#main').innerHTML = `
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
       <div><h2>${esc(ev.name||'Big Sur gathering')}</h2><div class="muted">${esc(ev.when_label||'')} · ${esc(ev.location||'')}</div></div>
       ${days!==null?`<div class="countdown"><span class="n">${Math.max(days,0)}</span><span class="muted">${days>0?'days to go':days===0?'starts today':'days — it has started'}</span></div>`:''}
     </div>
     <div class="kpis section">
-      <div class="card kpi"><div class="n">${new Set(cs.filter(c=>c.strength==='firm').map(c=>c.person_id)).size}</div><div class="l">said yes</div></div>
-      <div class="card kpi"><div class="n">${new Set(cs.filter(c=>c.strength!=='firm').map(c=>c.person_id)).size}</div><div class="l">maybe</div></div>
-      <div class="card kpi"><div class="n">${new Set(confirmed.map(c=>c.person_id)).size}</div><div class="l">confirmed since Atlanta</div></div>
+      <div class="card kpi"><div class="n">${coming}</div><div class="l">said yes — people coming${yes.length?` (from ${yes.length} contact${yes.length===1?'':'s'})`:''}</div></div>
+      <div class="card kpi"><div class="n">${unconfirmed.length}</div><div class="l">unconfirmed</div></div>
+      <div class="card kpi"><div class="n">${notComing.length}</div><div class="l">not coming</div></div>
     </div>
-    ${group('Said yes', cs.filter(c=>c.strength==='firm'), 'Includes offers to bring others')}
-    ${group('Maybe', cs.filter(c=>c.strength!=='firm'), 'Schedule or space permitting')}
-    <div class="section-head" style="margin-top:20px"><h3>Not yet asked about Big Sur</h3><span class="small muted">Already engaged — made other commitments or were introduced</span></div>
-    <div class="card list">${naCommitted.map(naRow).join('') || '<div class="li small muted">None</div>'}</div>
-    ${naRoom.length?`<details class="group" style="margin-top:12px"><summary><b>Others from the room</b> <span class="muted small">${naRoom.length} · no commitment yet, hosts excluded</span></summary><div class="card list">${naRoom.map(naRow).join('')}</div></details>`:''}`;
+    <p class="small muted" style="margin:10px 0 0">Set how many people are coming from each contact with <b>− / +</b> or by typing a number — it can include people they’re sending in their place. <b>0</b> means not coming; <b>clear</b> puts them back to unconfirmed.</p>
+    ${section('Said yes', 'Counted in the total above', yes, {who:true})}
+    ${section('Unconfirmed', 'Have a Big Sur commitment but no headcount yet', unconfirmed, {chip:true})}
+    ${notComing.length?section('Not coming', '', notComing, {}):''}
+    <div class="section-head" style="margin-top:22px"><h3>Not yet asked</h3><span class="small muted">Already engaged — other commitments or introduced</span></div>
+    <div class="card list">${naEngaged.map(p=>row(p)).join('') || '<div class="li small muted">None</div>'}</div>
+    ${naRoom.length?`<details class="group" style="margin-top:12px"><summary><b>Others from the room</b> <span class="muted small">${naRoom.length} · no commitment yet, hosts excluded</span></summary><div class="card list">${naRoom.map(p=>row(p)).join('')}</div></details>`:''}`;
+
+  const keep = async (pid, patch) => {
+    const y = window.scrollY, openDetails = !!document.querySelector('details.group[open]');
+    if(!await updatePerson(pid, patch)) return;
+    renderBigSur(); window.scrollTo(0, y);
+    if(openDetails) document.querySelector('details.group')?.setAttribute('open','');
+    const n = patch.bigsur_count;
+    if('bigsur_count' in patch) toast(`${person(pid).name}: ${n===null?'unconfirmed':n===0?'not coming':`${n} coming`}`);
+  };
+  document.querySelectorAll('[data-hc]').forEach(b=>b.onclick = () => {
+    const p = person(b.dataset.hc), cur = p.bigsur_count ?? null;
+    const next = b.dataset.d==='1' ? (cur===null ? 1 : cur+1) : (cur===null || cur===0 ? cur : cur-1);
+    if(next !== cur) keep(p.id, {bigsur_count: next});
+  });
+  document.querySelectorAll('[data-hci]').forEach(inp=>inp.onchange = () => {
+    const v = inp.value.trim(); const n = v==='' ? null : Math.max(0, parseInt(v,10)||0);
+    keep(inp.dataset.hci, {bigsur_count: n});
+  });
+  document.querySelectorAll('[data-hcclear]').forEach(b=>b.onclick = () => keep(b.dataset.hcclear, {bigsur_count:null}));
+  document.querySelectorAll('[data-hcwho]').forEach(inp=>inp.onchange = async () => {
+    if(await updatePerson(inp.dataset.hcwho, {bigsur_who: inp.value.trim()||null})) toast('Saved');
+  });
 }
 
 /* ===== Members ===== */
@@ -865,17 +1054,46 @@ function openCommit(id){
 }
 
 function openNewCommit(pid){
+  const onBoard = followPeople().sort((a,b)=>a.name.localeCompare(b.name));
+  const others = S.people.filter(p=>!commitsOf(p.id).length).sort((a,b)=>a.name.localeCompare(b.name));
+  const o = p => `<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)}${p.org?' — '+esc(p.org):''}</option>`;
   modal(`${head('New commitment')}
-    <label class="f" for="cperson">Who made it</label>${peopleSelect('cperson', pid||'', 'Choose a person…')}
+    <label class="f" for="cperson">Who made it</label>
+    <select id="cperson">
+      <option value="" ${pid?'':'selected'}>Choose a person…</option>
+      <option value="__new">＋ New person (not in this list)</option>
+      <optgroup label="On the board">${onBoard.map(o).join('')}</optgroup>
+      <optgroup label="Everyone else">${others.map(o).join('')}</optgroup>
+    </select>
+    <div id="newp" class="card pad hidden" style="margin-top:10px">
+      <div class="row"><div><label class="f" for="npname">Name *</label><input id="npname" type="text"></div>
+        <div><label class="f" for="nporg">Organization</label><input id="nporg" type="text"></div></div>
+      <div class="row"><div><label class="f" for="nptitle">Role / title</label><input id="nptitle" type="text"></div>
+        <div><label class="f" for="npemail">Email</label><input id="npemail" type="email"></div></div>
+      <div class="row"><div><label class="f" for="npown">Assigned to</label>${ownerSelect('npown', ME())}</div>
+        <div><label class="f" for="npnext">Next step</label><input id="npnext" type="text" placeholder="e.g. Send first follow-up"></div></div>
+    </div>
     <label class="f" for="cevent">Where</label><select id="cevent"><option value="">— no event —</option>${S.events.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select>
     ${commitFields({})}
     <div style="margin-top:16px"><button class="btn primary" id="cadd">Add commitment</button></div>`);
+  const toggle = () => { const isNew = $('#cperson').value==='__new'; $('#newp').classList.toggle('hidden', !isNew); if(isNew) $('#npname').focus(); };
+  $('#cperson').onchange = toggle;
   $('#cadd').onclick = async () => {
-    const person_id = $('#cperson').value; const {patch, asks} = readCommitFields();
-    if(!person_id || !patch.text) return toast('Choose a person and describe the commitment');
-    const row = await insert('ct_commitments', {...patch, person_id, event_id:$('#cevent').value||null, sort:commitsOf(person_id).length+1});
+    let person_id = $('#cperson').value; const {patch, asks} = readCommitFields();
+    if(!person_id) return toast('Choose a person, or pick “New person”');
+    if(!patch.text) return toast('Describe the commitment');
+    const event_id = $('#cevent').value || null;
+    if(person_id === '__new'){
+      const name = $('#npname').value.trim(); if(!name) return toast('Enter the new person’s name');
+      const np = await insert('ct_people', {name, org:$('#nporg').value.trim()||null, title:$('#nptitle').value.trim()||null, email:$('#npemail').value.trim()||null,
+        owner_email:$('#npown').value||null, next_action:$('#npnext').value.trim()||null, met_at_event:event_id});
+      if(!np) return;
+      S.people.push(np); person_id = np.id;
+    }
+    const row = await insert('ct_commitments', {...patch, person_id, event_id, sort:commitsOf(person_id).length+1});
     if(!row) return;
-    S.commits.push(row); await setCommitAsks(row.id, asks); closeModal(); route(); toast('Commitment added');
+    S.commits.push(row); await setCommitAsks(row.id, asks); closeModal(); route();
+    toast(`Added — ${person(person_id).name} is on the board`, {label:'Open card', fn:()=>openPersonCard(person_id)});
   };
 }
 
@@ -890,11 +1108,19 @@ function openLog(pid, cid){
     <label class="f" for="lcommit">About</label>
     <select id="lcommit"><option value="">General — not one commitment</option>${cs.map(c=>`<option value="${c.id}" ${c.id===cid?'selected':''}>${esc(c.text.slice(0,90))}</option>`).join('')}</select>
     <label class="f" for="lsum">What happened</label><textarea id="lsum" placeholder="e.g. Sent follow-up email quoting her Atlanta commitments; proposed times for a call"></textarea>
+    <div class="row">
+      <div style="flex:2 1 240px"><label class="f" for="lnext">Next step</label><input id="lnext" type="text" value="${esc(person(pid)?.next_action||'')}"></div>
+      <div><label class="f" for="ldue">New due date</label><input id="ldue" type="date" value=""></div>
+    </div>
+    <div class="duequick" id="ldq"><span class="tiny muted">Due:</span>${[['Tomorrow',1],['In 3 days',3],['Next week',7],['In 2 weeks',14]].map(([l,n])=>`<button type="button" class="chipbtn" data-days="${n}">${l}</button>`).join('')}</div>
+    ${person(pid)?.due_date?`<p class="tiny muted" style="margin:4px 0 0">The current date (${esc(dueInfo(person(pid).due_date).t.toLowerCase())}) will be replaced — leave blank for no date.</p>`:''}
     <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="lbump" checked> Move the status forward automatically</label>
     <p class="tiny muted" style="margin:4px 0 0 24px">Outreach moves “Committed” to “Reached out”; a reply moves it to “Responded”. Applies to the selected commitment, or to all of this person’s untouched ones if none is selected.</p>
     <div style="margin-top:16px"><button class="btn primary" id="ladd">Save</button></div>`);
+  document.querySelectorAll('#ldq [data-days]').forEach(b=>b.onclick = () => $('#ldue').value = addDays(today(), +b.dataset.days));
   $('#ladd').onclick = async () => {
     const summary = $('#lsum').value.trim(); if(!summary) return toast('Add a short note about what happened');
+    await updatePerson(pid, {next_action:$('#lnext').value.trim()||null, due_date:$('#ldue').value||null});
     const commitment_id = $('#lcommit').value || null, flow = $('#lflow').value;
     const row = await insert('ct_interactions', {person_id:pid, commitment_id, kind:$('#lkind').value, flow, occurred_on:$('#ldate').value||today(), summary, logged_by:ME()});
     if(!row) return;
@@ -1141,6 +1367,8 @@ async function markSentMany(drafts){
   const {data, error} = await sb.from('ct_interactions').insert(rows).select();
   if(error){ fail(error); return 0; }
   S.interactions.unshift(...data);
+  const pids = drafts.map(d=>d.p.id).filter(id=>person(id)?.due_date);
+  if(pids.length){ const r = await sb.from('ct_people').update({due_date:null}).in('id', pids).select(); if(!r.error) r.data.forEach(row=>{ const k=S.people.findIndex(x=>x.id===row.id); if(k>-1) S.people[k]={...S.people[k], ...row}; }); }
   const ids = drafts.filter(d=>TEMPLATES[d.tpl].moves).flatMap(d=>openCommitsFor(d.p.id).filter(c=>c.status==='committed').map(c=>c.id));
   return updateCommits(ids, {status:'reached_out'});
 }
