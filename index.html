@@ -174,6 +174,9 @@ label.f{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin:1
 .hc input{width:42px;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;text-align:center;padding:4px 0;font-weight:600;-moz-appearance:textfield}
 .hc input::-webkit-outer-spin-button,.hc input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .hc .hc-clear{width:auto;padding:0 10px;font-size:12px;color:var(--ink-3);border-left:1px solid var(--line)}
+.bsremove{border:1px solid transparent;background:transparent;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;color:var(--ink-3);cursor:pointer;flex:none}
+.bsremove:hover{border-color:var(--line-strong);color:var(--danger);background:var(--surface)}
+.removed-group .li{opacity:.75}
 .hc-who{margin:6px 0 4px;padding:5px 8px;font-size:13px;max-width:460px}
 .bs-chip{background:color-mix(in srgb,var(--s-realized) 16%,transparent);border-color:transparent;color:var(--ink);font-weight:600}
 .duequick{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
@@ -387,7 +390,7 @@ async function boot(){
 }
 
 // --- 3: lists load lean; bios come separately ---
-const PEOPLE_COLS = 'id,workspace_id,name,org,title,email,geography,met_at_event,introduced_by,notes,sector,ncc_visits,owner_email,next_action,due_date,note,note_updated_at,note_by,bigsur_count,bigsur_who,created_at,updated_at';
+const PEOPLE_COLS = 'id,workspace_id,name,org,title,email,geography,met_at_event,introduced_by,notes,sector,ncc_visits,owner_email,next_action,due_date,note,note_updated_at,note_by,bigsur_count,bigsur_who,bigsur_removed,created_at,updated_at';
 async function loadAll(withWs){
   const w = WORKSPACE_ID;
   const q = (t, cols='*') => sb.from(t).select(cols).eq('workspace_id', w);
@@ -900,9 +903,10 @@ function renderBigSur(){
   const byName = (a,b)=>a.name.localeCompare(b.name);
   const yes = S.people.filter(p=>hasCount(p) && p.bigsur_count>0).sort(byName);
   const notComing = S.people.filter(p=>hasCount(p) && p.bigsur_count===0).sort(byName);
-  const unconfirmed = S.people.filter(p=>!hasCount(p) && bsCs(p.id).length).sort((a,b)=>{
+  const removed = S.people.filter(p=>p.bigsur_removed && !hasCount(p)).sort(byName);
+  const unconfirmed = S.people.filter(p=>!hasCount(p) && !p.bigsur_removed && bsCs(p.id).length).sort((a,b)=>{
     const f = p => bsCs(p.id).some(c=>c.strength==='firm') ? 0 : 1; return f(a)-f(b) || byName(a,b); });
-  const decided = new Set([...yes, ...notComing, ...unconfirmed].map(p=>p.id));
+  const decided = new Set([...yes, ...notComing, ...unconfirmed, ...removed].map(p=>p.id));
   const notAsked = S.people.filter(p=>!decided.has(p.id)).sort(byName);
   const naEngaged = notAsked.filter(p=>commitsOf(p.id).length || p.introduced_by);
   const naRoom = notAsked.filter(p=>!commitsOf(p.id).length && !p.introduced_by && p.sector!=='Hosts');
@@ -923,7 +927,7 @@ function renderBigSur(){
         ${opts.who?`<input type="text" class="hc-who" data-hcwho="${p.id}" value="${esc(p.bigsur_who||'')}" placeholder="Who’s coming? e.g. two colleagues from his firm" onclick="event.stopPropagation()">`:''}
         <div class="tiny muted">${esc(ownerName(p.owner_email))}${p.next_action?' · '+esc(p.next_action):''}</div>
       </div>
-      <div class="bsright">${opts.chip && cs.length?`<span class="chip strength str-${firm?'firm':'conditional'}">${firm?'Said yes in Atlanta':'Maybe'}</span>`:''}${counter(p)}</div>
+      <div class="bsright">${opts.restore?`<button type="button" class="btn sm" data-bsrestore="${p.id}" onclick="event.stopPropagation()">Restore</button>`:''}${opts.chip && cs.length?`<span class="chip strength str-${firm?'firm':'conditional'}">${firm?'Said yes in Atlanta':'Maybe'}</span>`:''}${opts.restore?'':counter(p)}${opts.remove?`<button type="button" class="bsremove" data-bsremove="${p.id}" title="Remove from the Big Sur list" aria-label="Remove ${esc(p.name)} from the Big Sur list" onclick="event.stopPropagation()">×</button>`:''}</div>
     </div>`;
   };
   const section = (title, note, list, opts) => `<div class="section-head" style="margin-top:22px"><h3>${title} <span class="muted small">${list.length}</span></h3><span class="small muted">${note}</span></div>
@@ -941,30 +945,42 @@ function renderBigSur(){
     </div>
     <p class="small muted" style="margin:10px 0 0">Set how many people are coming from each contact with <b>− / +</b> or by typing a number — it can include people they’re sending in their place. <b>0</b> means not coming; <b>clear</b> puts them back to unconfirmed.</p>
     ${section('Said yes', 'Counted in the total above', yes, {who:true})}
-    ${section('Unconfirmed', 'Have a Big Sur commitment but no headcount yet', unconfirmed, {chip:true})}
+    ${section('Unconfirmed', 'Have a Big Sur commitment but no headcount yet', unconfirmed, {chip:true, remove:true})}
     ${notComing.length?section('Not coming', '', notComing, {}):''}
     <div class="section-head" style="margin-top:22px"><h3>Not yet asked</h3><span class="small muted">Already engaged — other commitments or introduced</span></div>
-    <div class="card list">${naEngaged.map(p=>row(p)).join('') || '<div class="li small muted">None</div>'}</div>
-    ${naRoom.length?`<details class="group" style="margin-top:12px"><summary><b>Others from the room</b> <span class="muted small">${naRoom.length} · no commitment yet, hosts excluded</span></summary><div class="card list">${naRoom.map(p=>row(p)).join('')}</div></details>`:''}`;
+    <div class="card list">${naEngaged.map(p=>row(p,{remove:true})).join('') || '<div class="li small muted">None</div>'}</div>
+    ${naRoom.length?`<details class="group" style="margin-top:12px"><summary><b>Others from the room</b> <span class="muted small">${naRoom.length} · no commitment yet, hosts excluded</span></summary><div class="card list">${naRoom.map(p=>row(p,{remove:true})).join('')}</div></details>`:''}
+    ${removed.length?`<details class="group removed-group" style="margin-top:22px"><summary><b>Removed from the Big Sur list</b> <span class="muted small">${removed.length} · click Restore to bring someone back</span></summary><div class="card list">${removed.map(p=>row(p,{restore:true})).join('')}</div></details>`:''}`;
 
   const keep = async (pid, patch) => {
-    const y = window.scrollY, openDetails = !!document.querySelector('details.group[open]');
+    const y = window.scrollY, openIdx = [...document.querySelectorAll('details.group')].map((d,k)=>d.open?k:-1).filter(k=>k>-1);
     if(!await updatePerson(pid, patch)) return;
-    renderBigSur(); window.scrollTo(0, y);
-    if(openDetails) document.querySelector('details.group')?.setAttribute('open','');
+    renderBigSur();
+    const ds = document.querySelectorAll('details.group'); openIdx.forEach(k=>ds[k]?.setAttribute('open',''));
+    window.scrollTo(0, y);
     const n = patch.bigsur_count;
     if('bigsur_count' in patch) toast(`${person(pid).name}: ${n===null?'unconfirmed':n===0?'not coming':`${n} coming`}`);
   };
   document.querySelectorAll('[data-hc]').forEach(b=>b.onclick = () => {
     const p = person(b.dataset.hc), cur = p.bigsur_count ?? null;
     const next = b.dataset.d==='1' ? (cur===null ? 1 : cur+1) : (cur===null || cur===0 ? cur : cur-1);
-    if(next !== cur) keep(p.id, {bigsur_count: next});
+    if(next !== cur) keep(p.id, {bigsur_count: next, bigsur_removed: false});
   });
   document.querySelectorAll('[data-hci]').forEach(inp=>inp.onchange = () => {
     const v = inp.value.trim(); const n = v==='' ? null : Math.max(0, parseInt(v,10)||0);
-    keep(inp.dataset.hci, {bigsur_count: n});
+    keep(inp.dataset.hci, n===null ? {bigsur_count: n} : {bigsur_count: n, bigsur_removed: false});
   });
   document.querySelectorAll('[data-hcclear]').forEach(b=>b.onclick = () => keep(b.dataset.hcclear, {bigsur_count:null}));
+  document.querySelectorAll('[data-bsremove]').forEach(b=>b.onclick = async e => {
+    e.stopPropagation();
+    const pid = b.dataset.bsremove, name = person(pid).name;
+    await keep(pid, {bigsur_removed:true});
+    toast(`${name} removed from the Big Sur list`, {label:'Undo', fn:()=>keep(pid, {bigsur_removed:false})});
+  });
+  document.querySelectorAll('[data-bsrestore]').forEach(b=>b.onclick = async e => {
+    e.stopPropagation();
+    const pid = b.dataset.bsrestore; await keep(pid, {bigsur_removed:false}); toast(`${person(pid).name} is back on the list`);
+  });
   document.querySelectorAll('[data-hcwho]').forEach(inp=>inp.onchange = async () => {
     if(await updatePerson(inp.dataset.hcwho, {bigsur_who: inp.value.trim()||null})) toast('Saved');
   });
