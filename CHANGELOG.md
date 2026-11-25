@@ -2,6 +2,12 @@
 
 Every deploy adds an entry here, newest first.
 
+## 2026-11-25 14:30 · Test copy option for batch emails
+
+**Updated:** `index.html`
+
+- Batch emails can add a test copy addressed to whoever is using the tracker. It appears first in the Google Doc, its subject starts with [TEST], and it is never logged as sent.
+
 ## 2026-11-25 14:25 · Document library and Big Sur pre-arrival email
 
 **Updated:** `index.html`

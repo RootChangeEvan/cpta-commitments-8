@@ -1494,6 +1494,8 @@ async function copyRich(html, text){
 }
 // Log any number of sent emails with two requests total
 async function markSentMany(drafts){
+  drafts = drafts.filter(d=>!d.test);   // test copies to yourself are never logged
+  if(!drafts.length) return 0;
   const rows = drafts.map(d=>({workspace_id:S.ws.id, person_id:d.p.id, kind:'email', flow:'outbound', occurred_on:today(), summary:`Sent ${TEMPLATES[d.tpl].short} email: "${d.subject}"`, logged_by:ME()}));
   const {data, error} = await sb.from('ct_interactions').insert(rows).select();
   if(error){ fail(error); return 0; }
@@ -1506,7 +1508,7 @@ async function markSentMany(drafts){
 
 // Two clear steps: copy the drafts, then open a blank Google Doc and paste.
 function toGoogleDoc(drafts, titleLine){
-  const n = drafts.length;
+  const n = drafts.length, real = drafts.filter(d=>!d.test).length;
   const html = (titleLine?`<h1>${esc(titleLine)}</h1>`:'') + drafts.map(draftBlockHtml).join('<hr>');
   const text = drafts.map(draftBlockText).join('\n\n— — —\n\n');
   const hasBrackets = drafts.some(d=>/\[[^\]]+\]/.test(d.body));
@@ -1515,7 +1517,7 @@ function toGoogleDoc(drafts, titleLine){
       <li><button class="btn primary" id="hcopy">Copy the draft${n>1?'s':''}</button> <span class="small muted" id="hcopied"></span></li>
       <li><button class="btn" id="hopen">Open a blank Google Doc</button> <span class="small muted">then click inside it and press <b>⌘V</b> (Mac) or <b>Ctrl+V</b> (Windows)</span></li>
       <li class="small">Review and edit in the doc${hasBrackets?' — fill in anything in <b>[brackets]</b>':''}, then copy each email into your own mail and send it.</li>
-      <li><button class="btn" id="hsent">Mark ${n>1?`all ${n}`:'it'} as sent</button> <span class="small muted">after you’ve sent ${n>1?'them':'it'}${TEMPLATES[drafts[0].tpl].moves?' — moves untouched commitments to Reached out':''}</span></li>
+      <li><button class="btn" id="hsent">Mark ${real>1?`all ${real}`:'it'} as sent</button> <span class="small muted">after you’ve sent ${real>1?'them':'it'}${real<n?' · the test copy isn\u2019t logged':''}${TEMPLATES[drafts[0].tpl].moves?' — moves untouched commitments to Reached out':''}</span></li>
     </ol>
     <div class="hr"></div>
     <div class="small muted" style="margin-bottom:6px">Preview of what gets copied:</div>
@@ -1527,9 +1529,9 @@ function toGoogleDoc(drafts, titleLine){
   };
   $('#hopen').onclick = () => { if(!window.open('https://docs.new','_blank')) toast('Your browser blocked the new tab — go to docs.new'); };
   $('#hsent').onclick = async () => {
-    if(!confirm(`Log ${n>1?`${n} emails`:'this email'} as sent?`)) return;
+    if(!confirm(`Log ${real>1?`${real} emails`:'this email'} as sent?`)) return;
     const moved = await markSentMany(drafts);
-    closeModal(); route(); toast(`Logged ${n}${moved?` · ${moved} moved to Reached out`:''}`);
+    closeModal(); route(); toast(`Logged ${real}${moved?` · ${moved} moved to Reached out`:''}`);
   };
 }
 
@@ -1565,7 +1567,7 @@ function openDraft(pid, tpl, sel){
 
 // Several people at once → one Google Doc
 let BATCH_DOCS = new Set();
-let BATCH_TPL = null;
+let BATCH_TPL = null, BATCH_TEST = false;
 function openBatchDrafts(tpl){
   tpl = tpl || 'first';
   if(tpl !== BATCH_TPL){ BATCH_TPL = tpl; if(TEMPLATES[tpl].docs) BATCH_DOCS = autoDocs(tpl); }
@@ -1580,6 +1582,7 @@ function openBatchDrafts(tpl){
     <div class="list card" id="blist">${people.map(p=>{ const own = p.owner_email ? [p.owner_email] : [];
       return `<label class="li" style="cursor:pointer" data-owners="${esc(own.join(','))}"><input type="checkbox" value="${p.id}" ${(tpl==='bigsur' && !bigSurCommits(p.id).length) || (tpl==='prearrival' && !(p.bigsur_count>0)) ? '' : 'checked'} style="margin-top:4px"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}<div class="tiny muted">${tpl==='prearrival' ? (p.bigsur_count>0 ? `Coming${p.bigsur_count>1?` · ${p.bigsur_count} people`:''}` : 'Not confirmed yet') : `${openCommitsFor(p.id).length} open commitment${openCommitsFor(p.id).length===1?'':'s'}`}${own.length?' · '+esc([...new Set(own)].map(ownerName).join(', ')):''}${p.email?'':' · no email'}</div></div></label>`; }).join('')}</div>
     <label class="f">Documents</label><div class="small muted">Links you pick here go into every draft.</div><div id="bdocs"></div>
+    <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="btest" ${BATCH_TEST?'checked':''}> Add a test copy addressed to me${ME()?` (${esc(ME())})`:''}, so I can see how it arrives</label>
     <div class="btns" style="margin-top:14px"><button class="btn primary" id="bdoc">Next: prepare drafts</button></div>`
     : '<div class="card pad small muted">No one fits this template right now.</div>'}`);
   document.querySelectorAll('input[name=btpl]').forEach(r=>r.onchange = () => openBatchDrafts(r.value));
@@ -1587,12 +1590,20 @@ function openBatchDrafts(tpl){
   if(!people.length) return;
   const boxes = () => [...document.querySelectorAll('#blist input')];
   mountDocs('bdocs', BATCH_DOCS, () => {});
+  $('#btest').onchange = e => BATCH_TEST = e.target.checked;
   $('#ball').onclick = () => boxes().forEach(b=>b.checked=true);
   $('#bnone').onclick = () => boxes().forEach(b=>b.checked=false);
   $('#bmine').onchange = e => boxes().forEach(b=>{ const owners = b.closest('label').dataset.owners.split(',').filter(Boolean); b.checked = !e.target.checked || owners.includes(ME()); });
   $('#bdoc').onclick = () => {
     const ids = boxes().filter(b=>b.checked).map(b=>b.value); if(!ids.length) return toast('Pick at least one person');
-    toGoogleDoc(ids.map(id=>{ const d = draftFor(id, tpl); d.body = withDocs(d.body, BATCH_DOCS, '').body; return d; }), `CPTA ${TEMPLATES[tpl].short} emails — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}`);
+    const drafts = ids.map(id=>{ const d = draftFor(id, tpl); d.body = withDocs(d.body, BATCH_DOCS, '').body; return d; });
+    if(BATCH_TEST && ME()){
+      // A copy of the first draft, greeting and address changed to you; it's listed first and never logged as sent
+      const meName = member(ME())?.name || ME(), d0 = drafts[0];
+      const body = d0.body.replace(/^(Hi|Dear) [^,\n]+,/, `$1 ${meName.split(' ')[0]},`);
+      drafts.unshift({...d0, test:true, body, subject:'[TEST] '+d0.subject, p:{id:null, name:`TEST COPY for ${meName}`, org:'', email:ME()}});
+    }
+    toGoogleDoc(drafts, `CPTA ${TEMPLATES[tpl].short} emails — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}`);
   };
 }
 
