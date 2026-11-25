@@ -239,6 +239,14 @@ details.group{margin:8px 0}
 ol.steps{padding-left:22px;margin:8px 0}
 ol.steps li{margin:10px 0}
 .tplpick label{font-size:13px}
+.docchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
+.docchip{cursor:pointer;font:inherit;font-size:12px;min-height:30px}
+.docchip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);font-weight:600}
+.docmgr{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;background:var(--surface-2)}
+.docrow{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font-size:13px}
+.docrow a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docadd{display:grid;grid-template-columns:1fr 1.4fr auto;gap:6px;margin-top:10px}
+@media (max-width:640px){.docadd{grid-template-columns:1fr}}
 .docprev{border:1px solid var(--line);border-radius:8px;padding:4px 16px;background:var(--surface);font-size:14px}
 .docprev h1{font-size:18px;margin:12px 0}.docprev h2{font-size:16px;margin:14px 0 6px}.docprev hr{border:none;border-top:1px dashed var(--line-strong);margin:16px 0}
 details.group>summary{cursor:pointer;padding:8px 2px;list-style-position:inside}
@@ -305,7 +313,7 @@ const FLOW_L = {outbound:'We reached out', inbound:'They reached out', internal:
 const OUTCOME_L = {meeting_held:'Meeting held', introduction_made:'Introduction made', pilot_site:'Pilot site', funding:'Funding', attendance:'Attendance', council_seat:'Council seat', partnership:'Partnership', other:'Other'};
 
 /* ===== State ===== */
-const S = {user:null, ws:null, role:'member', members:[], events:[], asks:[], people:[], commits:[], cAsks:new Map(), interactions:[], outcomes:[]};
+const S = {user:null, ws:null, role:'member', members:[], events:[], asks:[], people:[], commits:[], cAsks:new Map(), interactions:[], outcomes:[], docs:[]};
 const F = {owner:'', ask:'', strength:'', direction:'', q:''}; // board filters
 
 /* ===== Helpers ===== */
@@ -396,7 +404,9 @@ async function loadAll(withWs){
   const q = (t, cols='*') => sb.from(t).select(cols).eq('workspace_id', w);
   const reqs = [q('ct_members'),q('ct_events'),q('ct_asks'),q('ct_people',PEOPLE_COLS),q('ct_commitments'),q('ct_commitment_asks'),q('ct_interactions'),q('ct_outcomes')];
   if(withWs || !S.ws) reqs.push(sb.from('ct_workspaces').select('*').eq('id', w).single());
-  const res = await Promise.all(reqs);
+  const docsReq = q('ct_documents').order('sort').order('created_at');   // a failure here never blocks the ledger
+  const [res, dr] = await Promise.all([Promise.all(reqs), docsReq]);
+  if(!dr.error) S.docs = dr.data;
   for(const r of res) if(r.error){ fail(r.error); return false; }
   const [m,e,a,p,c,ca,i,o,ws] = res;
   if(ws) S.ws = ws.data;
@@ -1214,8 +1224,14 @@ const TEMPLATES = {
   first:  {label:'First follow-up from Atlanta', short:'First follow-up', moves:true},
   nudge:  {label:'Gentle nudge', short:'Nudge', moves:true},
   bigsur: {label:'Big Sur invitation or logistics', short:'Big Sur', moves:false},
-  thanks: {label:'Thank you after something happened', short:'Thank-you', moves:false}
+  thanks: {label:'Thank you after something happened', short:'Thank-you', moves:false},
+  prearrival: {label:'Big Sur pre-arrival: agenda, FAQ, travel', short:'Pre-arrival', moves:false, docs:[/agenda/i, /faq/i]}
 };
+// Documents a template starts with already ticked (matched by title in the library)
+const autoDocs = tpl => new Set((TEMPLATES[tpl]?.docs||[]).map(re=>S.docs.find(d=>re.test(d.title))?.id).filter(Boolean));
+// Single-line paragraphs shown as headings in the Google Doc preview
+const DRAFT_HEADINGS = new Set(['Your travel plans','A weekend off the grid']);
+const hasBsCount = p => p.bigsur_count !== null && p.bigsur_count !== undefined;
 const isOpen = c => !['realized','declined'].includes(c.status) && c.direction!=='between_others';
 const openCommitsFor = pid => commitsOf(pid).filter(isOpen);
 const bigSurAsk = () => S.asks.find(a=>a.code==='bigsur');
@@ -1276,7 +1292,42 @@ function draftFor(pid, tpl){
   const bs = bigSurEvent(), bsCs = bigSurCommits(pid).filter(isOpen);
   const sign = `\n\nWarm regards,\n${me}`;
   let subject, body;
-  if(tpl==='nudge'){
+  if(tpl==='prearrival'){
+    const other = (S.members.find(m=>m.email!==ME())?.name || 'Beryl').split(' ')[0];
+    subject = 'See you in Big Sur: agenda, FAQ, and travel details';
+    body = `Hi ${first},
+
+${other} and I are so excited to be with you in Big Sur on December 6–7. Thank you for making the time and the trip. We've been looking forward to bringing this group together, and we can't wait to spend two days thinking, talking, and building with you.
+
+To help you prepare, you'll find links to two documents at the end of this email:
+
+• An FAQ on the CPTA Initiative, with background on the work and the questions we'll explore together
+• The proposed participant agenda. We'll begin with brunch at 10 a.m. on Sunday, December 6
+
+Your travel plans
+
+Please send us your travel details by Thursday, December 3 so we can help with getting you to and from Deetjen's. It would help to know:
+
+• How and when you're arriving and departing (flight, airport, and arrival time, or whether you're driving)
+• Whether you'd like help with a ride or would like to share one with other participants
+
+The closest airport is Monterey, and Deetjen's is about 30 miles south of Carmel on Highway 1.
+
+A weekend off the grid
+
+One thing to know before you arrive: Deetjen's has no internet and no mobile coverage. If you need to connect, a place with a signal is about a five-minute drive away, and we're happy to take you. But we hope you'll treat the gathering as a chance to set the phone aside.
+
+That choice is deliberate. Trust is built through attention, presence, and time spent with one another, and those are hard to come by when we're all half-connected to somewhere else. Big Sur gives us room to slow down, take in a beautiful place, and give this conversation, and each other, our full attention. For a gathering about trust, that feels like the right way to begin.
+
+If family or colleagues need to reach you, they can call the inn at (831) 667-2377.
+
+Please reach out with any questions. We're looking forward to seeing you very soon.
+
+Warmly,
+Evan and Beryl
+Evan Bloom · ebloom@rootchange.org · 202-487-3157
+Beryl Levinger · blevinger@rootchange.org · 917-371-3403`;
+  } else if(tpl==='nudge'){
     const last = lastTouchOf(pid,'outbound');
     subject = 'Checking in — CPTA follow-up from Atlanta';
     body = `Hi ${first},
@@ -1351,17 +1402,81 @@ const BATCH_FILTER = {
   first: p => openCommitsFor(p.id).some(c=>c.status==='committed'),
   nudge: p => openCommitsFor(p.id).some(c=>c.status==='reached_out'),
   bigsur: p => bigSurCommits(p.id).some(isOpen) || (BATCH_INVITE && !bigSurCommits(p.id).length && !p.introduced_by && p.sector!=='Hosts'),
-  thanks: p => !!lastOutcome(p.id)
+  thanks: p => !!lastOutcome(p.id),
+  prearrival: p => p.bigsur_count > 0 || (!hasBsCount(p) && !p.bigsur_removed && bigSurCommits(p.id).length > 0)
 };
 
 // Plain text → simple HTML that pastes cleanly into Google Docs (bullets become a real list)
 function bodyHtml(body){
   return body.split(/\n{2,}/).map(block=>{
     const lines = block.split('\n');
-    if(lines.every(l=>l.startsWith('• '))) return '<ul>'+lines.map(l=>`<li>${esc(l.slice(2))}</li>`).join('')+'</ul>';
-    return '<p>'+lines.map(esc).join('<br>')+'</p>';
+    if(lines.length===1 && DRAFT_HEADINGS.has(lines[0])) return `<h3>${esc(lines[0])}</h3>`;
+    if(lines.every(l=>l.startsWith('• '))) return '<ul>'+lines.map(l=>`<li>${linkLine(l.slice(2))}</li>`).join('')+'</ul>';
+    return '<p>'+lines.map(linkify).join('<br>')+'</p>';
   }).join('');
 }
+// "Title: https://…" becomes a titled link; any other bare URL becomes clickable
+function linkLine(t){
+  const m = t.match(/^(.+?):\s+(https?:\/\/\S+)$/);
+  return m ? `<a href="${esc(m[2])}">${esc(m[1])}</a>` : linkify(t);
+}
+function linkify(t){ return esc(t).replace(/https?:\/\/[^\s<]+/g, u=>`<a href="${u}">${u}</a>`); }
+
+/* ===== Documents library: one click adds a link to the email ===== */
+const DOC_HEAD = 'For your reference:';
+function docsBlock(sel){
+  const ds = S.docs.filter(d=>sel.has(d.id));
+  return ds.length ? `${DOC_HEAD}\n\n${ds.map(d=>`• ${d.title}: ${d.url}`).join('\n')}` : '';
+}
+// Puts the document links just above the sign-off (or at the end), replacing the previous block if it's still intact
+function withDocs(body, sel, prev){
+  if(prev && body.includes(prev)) body = body.replace('\n\n'+prev, '').replace(prev, '');
+  const blk = docsBlock(sel);
+  if(!blk) return {body, blk:''};
+  const m = body.match(/\n\n(Warm regards|Warmly|Best regards|Best|With gratitude|Thank you|Thanks),?\n/);
+  body = m ? body.slice(0, m.index) + '\n\n' + blk + body.slice(m.index) : body.replace(/\s*$/, '') + '\n\n' + blk;
+  return {body, blk};
+}
+// Chips plus an inline "Manage documents" panel; onChange runs whenever the selection changes
+function mountDocs(boxId, sel, onChange){
+  const box = $('#'+boxId); if(!box) return;
+  const draw = open => {
+    box.innerHTML = `<div class="docchips">${S.docs.map(d=>`<button type="button" class="chip docchip ${sel.has(d.id)?'on':''}" data-doc="${d.id}" aria-pressed="${sel.has(d.id)}">${sel.has(d.id)?'✓':'+'} ${esc(d.title)}</button>`).join('') || '<span class="small muted">No documents in the library yet.</span>'}
+      <button type="button" class="btn sm" data-dm>${open?'Done':'Manage documents'}</button></div>
+      ${open?`<div class="docmgr">
+        ${S.docs.map(d=>`<div class="docrow"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a><button type="button" class="btn sm" data-docdel="${d.id}" aria-label="Remove ${esc(d.title)} from the library">Remove</button></div>`).join('') || '<div class="small muted">Nothing here yet.</div>'}
+        <div class="docadd">
+          <input type="text" id="${boxId}-t" placeholder="Name, e.g. Travel tips (PDF)" aria-label="Document name">
+          <input type="url" id="${boxId}-u" placeholder="Paste a Google Drive link" aria-label="Document link">
+          <button type="button" class="btn primary sm" data-docadd>Add</button>
+        </div>
+        <div class="tiny muted" style="margin-top:6px">Check the file's sharing in Drive is set so recipients can open it.</div>
+      </div>`:''}`;
+    box.querySelectorAll('[data-doc]').forEach(b=>b.onclick = () => { const id=b.dataset.doc; sel.has(id)?sel.delete(id):sel.add(id); onChange(); draw(open); });
+    box.querySelector('[data-dm]').onclick = () => draw(!open);
+    if(!open) return;
+    box.querySelectorAll('[data-docdel]').forEach(b=>b.onclick = async () => {
+      const d = S.docs.find(x=>x.id===b.dataset.docdel);
+      if(!confirm(`Remove “${d.title}” from the library? The file in Drive isn't touched.`)) return;
+      const {error} = await sb.from('ct_documents').delete().eq('id', d.id);
+      if(error) return fail(error);
+      S.docs = S.docs.filter(x=>x.id!==d.id);
+      if(sel.delete(d.id)) onChange();
+      draw(true); toast('Removed from the library');
+    });
+    box.querySelector('[data-docadd]').onclick = async () => {
+      const title = $('#'+boxId+'-t').value.trim(), url = $('#'+boxId+'-u').value.trim();
+      if(!title) return toast('Give the document a name');
+      if(!/^https?:\/\//.test(url)) return toast('Paste a full link starting with https://');
+      const sort = S.docs.reduce((n,d)=>Math.max(n, d.sort||0), 0) + 1;
+      const {data, error} = await sb.from('ct_documents').insert({workspace_id:S.ws.id, title, url, sort, created_by:ME()}).select().single();
+      if(error) return fail(error);
+      S.docs.push(data); draw(true); toast(`Added “${title}”`);
+    };
+  };
+  draw(false);
+}
+
 function draftBlockHtml(d){
   return `<h2>${esc(d.p.name)}${d.p.org?` — ${esc(d.p.org)}`:''}</h2>
     <p><b>To:</b> ${esc(d.p.email||'(no email on file)')}<br><b>Subject:</b> ${esc(d.subject)}</p>${bodyHtml(d.body)}`;
@@ -1420,13 +1535,17 @@ function toGoogleDoc(drafts, titleLine){
 
 const tplPicker = (cur, name) => `<div class="checks tplpick">${Object.entries(TEMPLATES).map(([k,t])=>`<label><input type="radio" name="${name}" value="${k}" ${k===cur?'checked':''}>${esc(t.label)}</label>`).join('')}</div>`;
 
-function openDraft(pid, tpl){
+function openDraft(pid, tpl, sel){
   tpl = tpl || suggestTemplate(pid);
+  sel = sel || autoDocs(tpl);
   const d = draftFor(pid, tpl);
+  let blk = '';
+  ({body:d.body, blk} = withDocs(d.body, sel, ''));
   modal(`${head('Email draft', esc(d.p.name))}
     <label class="f">Template</label>${tplPicker(tpl,'dtpl')}
     <label class="f" for="dsub">Subject</label><input id="dsub" type="text" value="${esc(d.subject)}">
     <label class="f" for="dbody">Message</label><textarea id="dbody" style="min-height:320px">${esc(d.body)}</textarea>
+    <label class="f">Documents</label><div class="small muted">Click to add or remove a link in the message.</div><div id="ddocs"></div>
     <div class="btns" style="margin-top:14px">
       <button class="btn primary" id="ddoc">Review in Google Doc</button>
       <button class="btn" id="dcopy">Copy text</button>
@@ -1436,18 +1555,22 @@ function openDraft(pid, tpl){
   $('#dbody').oninput = $('#dsub').oninput = () => dirty = true;
   document.querySelectorAll('input[name=dtpl]').forEach(r=>r.onchange = () => {
     if(dirty && !confirm('Switch template? Your edits to this draft will be replaced.')){ document.querySelector(`input[name=dtpl][value=${tpl}]`).checked = true; return; }
-    openDraft(pid, r.value);
+    openDraft(pid, r.value, TEMPLATES[r.value].docs ? autoDocs(r.value) : sel);
   });
+  mountDocs('ddocs', sel, () => { const r = withDocs($('#dbody').value, sel, blk); $('#dbody').value = r.body; blk = r.blk; });
   const cur = () => ({...d, subject:$('#dsub').value, body:$('#dbody').value});
   $('#ddoc').onclick = () => toGoogleDoc([cur()]);
   $('#dcopy').onclick = async () => { const c = cur(); toast(await copyRich(bodyHtml(c.body), c.body) ? 'Copied' : 'Copy failed — select the text and copy manually'); };
 }
 
 // Several people at once → one Google Doc
+let BATCH_DOCS = new Set();
+let BATCH_TPL = null;
 function openBatchDrafts(tpl){
   tpl = tpl || 'first';
+  if(tpl !== BATCH_TPL){ BATCH_TPL = tpl; if(TEMPLATES[tpl].docs) BATCH_DOCS = autoDocs(tpl); }
   const people = S.people.filter(BATCH_FILTER[tpl]).sort((a,b)=>a.name.localeCompare(b.name));
-  const who = {first:'have commitments not yet followed up', nudge:'were contacted but haven’t replied', bigsur: BATCH_INVITE ? 'either committed to Big Sur or haven\u2019t been asked yet (they get the invitation version)' : 'have an open Big Sur commitment', thanks:'have an outcome recorded'}[tpl];
+  const who = {first:'have commitments not yet followed up', nudge:'were contacted but haven’t replied', bigsur: BATCH_INVITE ? 'either committed to Big Sur or haven\u2019t been asked yet (they get the invitation version)' : 'have an open Big Sur commitment', thanks:'have an outcome recorded', prearrival:'are on the Big Sur list. Everyone marked as coming is ticked; people who haven\u2019t confirmed yet are listed unticked'}[tpl];
   modal(`${head('Batch emails')}
     <label class="f">Template</label>${tplPicker(tpl,'btpl')}
     ${tpl==='bigsur'?`<label class="small" style="display:flex;gap:6px;align-items:center;margin:8px 0"><input type="checkbox" id="binvite" ${BATCH_INVITE?'checked':''}> Also invite people from the room who haven\u2019t been asked</label>`:''}
@@ -1455,19 +1578,21 @@ function openBatchDrafts(tpl){
     ${people.length?`<div class="btns" style="margin-bottom:8px"><button class="btn sm" id="ball">All</button><button class="btn sm" id="bnone">None</button>
       <label class="small" style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="checkbox" id="bmine"> Only ones I own</label></div>
     <div class="list card" id="blist">${people.map(p=>{ const own = p.owner_email ? [p.owner_email] : [];
-      return `<label class="li" style="cursor:pointer" data-owners="${esc(own.join(','))}"><input type="checkbox" value="${p.id}" ${tpl==='bigsur' && !bigSurCommits(p.id).length ? '' : 'checked'} style="margin-top:4px"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}<div class="tiny muted">${openCommitsFor(p.id).length} open commitment${openCommitsFor(p.id).length===1?'':'s'}${own.length?' · '+esc([...new Set(own)].map(ownerName).join(', ')):''}${p.email?'':' · no email'}</div></div></label>`; }).join('')}</div>
+      return `<label class="li" style="cursor:pointer" data-owners="${esc(own.join(','))}"><input type="checkbox" value="${p.id}" ${(tpl==='bigsur' && !bigSurCommits(p.id).length) || (tpl==='prearrival' && !(p.bigsur_count>0)) ? '' : 'checked'} style="margin-top:4px"><div class="grow small"><b>${esc(p.name)}</b> · ${esc(p.org||'')}<div class="tiny muted">${tpl==='prearrival' ? (p.bigsur_count>0 ? `Coming${p.bigsur_count>1?` · ${p.bigsur_count} people`:''}` : 'Not confirmed yet') : `${openCommitsFor(p.id).length} open commitment${openCommitsFor(p.id).length===1?'':'s'}`}${own.length?' · '+esc([...new Set(own)].map(ownerName).join(', ')):''}${p.email?'':' · no email'}</div></div></label>`; }).join('')}</div>
+    <label class="f">Documents</label><div class="small muted">Links you pick here go into every draft.</div><div id="bdocs"></div>
     <div class="btns" style="margin-top:14px"><button class="btn primary" id="bdoc">Next: prepare drafts</button></div>`
     : '<div class="card pad small muted">No one fits this template right now.</div>'}`);
   document.querySelectorAll('input[name=btpl]').forEach(r=>r.onchange = () => openBatchDrafts(r.value));
   if($('#binvite')) $('#binvite').onchange = e => { BATCH_INVITE = e.target.checked; openBatchDrafts('bigsur'); };
   if(!people.length) return;
   const boxes = () => [...document.querySelectorAll('#blist input')];
+  mountDocs('bdocs', BATCH_DOCS, () => {});
   $('#ball').onclick = () => boxes().forEach(b=>b.checked=true);
   $('#bnone').onclick = () => boxes().forEach(b=>b.checked=false);
   $('#bmine').onchange = e => boxes().forEach(b=>{ const owners = b.closest('label').dataset.owners.split(',').filter(Boolean); b.checked = !e.target.checked || owners.includes(ME()); });
   $('#bdoc').onclick = () => {
     const ids = boxes().filter(b=>b.checked).map(b=>b.value); if(!ids.length) return toast('Pick at least one person');
-    toGoogleDoc(ids.map(id=>draftFor(id, tpl)), `CPTA ${TEMPLATES[tpl].short} emails — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}`);
+    toGoogleDoc(ids.map(id=>{ const d = draftFor(id, tpl); d.body = withDocs(d.body, BATCH_DOCS, '').body; return d; }), `CPTA ${TEMPLATES[tpl].short} emails — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'})}`);
   };
 }
 
