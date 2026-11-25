@@ -1493,40 +1493,29 @@ async function copyRich(html, text){
     try{ await navigator.clipboard.writeText(text); return true; }catch(e2){ return false; }
   }
 }
-/* ===== Outlook: one .eml file per draft; X-Unsent makes Outlook open it as a new message ready to send ===== */
-function b64utf8(str){ const bytes = new TextEncoder().encode(str); let bin=''; for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return btoa(bin).replace(/.{76}(?=.)/g,'$&\r\n'); }
-const hdr = v => /^[\x20-\x7e]*$/.test(v) ? v : `=?UTF-8?B?${b64utf8(v).replace(/\r\n/g,'')}?=`;
-function emlFor(d){
-  const bnd = 'b' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const html = `<!doctype html><html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.45;color:#1f1f1f">${bodyHtml(d.body)}</body></html>`;
-  const to = d.p.email ? (d.p.name && !d.test ? `${hdr(d.p.name)} <${d.p.email}>` : d.p.email) : '';
-  return [
-    `To: ${to}`, `Subject: ${hdr(d.subject)}`, 'X-Unsent: 1', 'MIME-Version: 1.0',
-    `Content-Type: multipart/alternative; boundary="${bnd}"`, '',
-    `--${bnd}`, 'Content-Type: text/plain; charset="utf-8"', 'Content-Transfer-Encoding: base64', '', b64utf8(d.body), '',
-    `--${bnd}`, 'Content-Type: text/html; charset="utf-8"', 'Content-Transfer-Encoding: base64', '', b64utf8(html), '',
-    `--${bnd}--`, ''
-  ].join('\r\n');
-}
-function emlName(d){ return `${TEMPLATES[d.tpl].short} - ${d.test ? 'TEST' : d.p.name}`.replace(/[\\/:*?"<>|]+/g,'').trim() + '.eml'; }
-function downloadEml(d){
-  const url = URL.createObjectURL(new Blob([emlFor(d)], {type:'message/rfc822'}));
-  const a = Object.assign(document.createElement('a'), {href:url, download:emlName(d)});
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 4000);
-}
-function outlookBlock(drafts){
+/* ===== Per-person copy: paste each email into a new message in any mail app ===== */
+function copyBlock(drafts){
   return `<div class="hr"></div>
-    <h3 style="margin:4px 0 4px;font-size:15px">Or open them in Outlook</h3>
-    <p class="small muted" style="margin:0 0 8px">Each file opens in desktop Outlook as a new message, already addressed. Review it, then press Send, or close it and save it to Drafts. When they’re sent, come back and use <b>Mark as sent</b> above.</p>
-    <div class="btns" style="margin-bottom:8px"><button class="btn${drafts.length>1?'':' primary'}" data-emlall>${drafts.length>1?`Download all ${drafts.length}`:'Download for Outlook'}</button></div>
-    ${drafts.length>1?`<div class="list card">${drafts.map((d,i)=>`<div class="li small" style="align-items:center"><div class="grow"><b>${esc(d.test?'Test copy for you':d.p.name)}</b> <span class="muted">${esc(d.p.email||'no email on file')}</span></div><button class="btn sm" data-eml="${i}">Download</button></div>`).join('')}</div>`:''}
-    ${drafts.some(d=>!d.p.email)?'<p class="tiny muted">Drafts with no email on file download without an address.</p>':''}`;
+    <h3 style="margin:4px 0 4px;font-size:15px">Copy each email</h3>
+    <p class="small muted" style="margin:0 0 8px">For each person: copy the address and subject into a new email, then copy the message and paste it into the body. The headings and document links come with it. When they’re sent, use <b>Mark as sent</b> above.</p>
+    <div class="list card">${drafts.map((d,i)=>`<div class="li small" style="align-items:center;flex-wrap:wrap;gap:8px">
+      <div class="grow" style="min-width:180px"><b>${esc(d.test?'Test copy for you':d.p.name)}</b><div class="tiny muted">${esc(d.p.email||'no email on file')}</div></div>
+      <div class="btns" style="gap:6px">
+        <button class="btn sm" data-cp="to" data-i="${i}" ${d.p.email?'':'disabled'}>Copy address</button>
+        <button class="btn sm" data-cp="subject" data-i="${i}">Copy subject</button>
+        <button class="btn sm primary" data-cp="body" data-i="${i}">Copy message</button>
+      </div></div>`).join('')}</div>`;
 }
-function wireOutlook(drafts){
-  document.querySelectorAll('[data-eml]').forEach(b=>b.onclick = () => { downloadEml(drafts[+b.dataset.eml]); b.textContent = '✓ Downloaded'; });
-  const all = document.querySelector('[data-emlall]');
-  if(all) all.onclick = async () => { for(const d of drafts){ downloadEml(d); await new Promise(r=>setTimeout(r, 350)); } toast(`${drafts.length} file${drafts.length>1?'s':''} downloaded — open them from your Downloads folder`); };
+function wireCopy(drafts){
+  document.querySelectorAll('[data-cp]').forEach(b=>b.onclick = async () => {
+    const d = drafts[+b.dataset.i], what = b.dataset.cp;
+    const ok = what==='body' ? await copyRich(bodyHtml(d.body), d.body)
+             : await copyRich(esc(what==='to'?d.p.email:d.subject), what==='to'?d.p.email:d.subject);
+    if(!ok) return toast('Couldn’t copy. Select the text in the preview and copy it by hand');
+    document.querySelectorAll(`[data-i="${b.dataset.i}"]`).forEach(x=>x.classList.remove('primary'));
+    b.textContent = '✓ ' + b.textContent.replace(/^✓ /,'');
+    toast(`${what==='body'?'Message':what==='to'?'Address':'Subject'} copied${what==='body'?' — paste it into the email body':''}`);
+  });
 }
 
 // Log any number of sent emails with two requests total
@@ -1556,11 +1545,11 @@ function toGoogleDoc(drafts, titleLine){
       <li class="small">Review and edit in the doc${hasBrackets?' — fill in anything in <b>[brackets]</b>':''}, then copy each email into your own mail and send it.</li>
       <li><button class="btn" id="hsent">Mark ${real>1?`all ${real}`:'it'} as sent</button> <span class="small muted">after you’ve sent ${real>1?'them':'it'}${real<n?' · the test copy isn\u2019t logged':''}${TEMPLATES[drafts[0].tpl].moves?' — moves untouched commitments to Reached out':''}</span></li>
     </ol>
-    ${outlookBlock(drafts)}
+    ${copyBlock(drafts)}
     <div class="hr"></div>
     <div class="small muted" style="margin-bottom:6px">Preview of what gets copied:</div>
     <div class="docprev">${html}</div>`);
-  wireOutlook(drafts);
+  wireCopy(drafts);
   $('#hcopy').onclick = async () => {
     const ok = await copyRich(`<div>${html}</div>`, text);
     $('#hcopied').textContent = ok ? '✓ Copied' : 'Couldn’t copy — select the preview below and copy it by hand';
@@ -1589,7 +1578,6 @@ function openDraft(pid, tpl, sel){
     <label class="f">Documents</label><div class="small muted">Click to add or remove a link in the message.</div><div id="ddocs"></div>
     <div class="btns" style="margin-top:14px">
       <button class="btn primary" id="ddoc">Review in Google Doc</button>
-      <button class="btn" id="dout">Open in Outlook</button>
       <button class="btn" id="dcopy">Copy text</button>
     </div>
     <p class="tiny muted">${d.p.email?`To: ${esc(d.p.email)}`:'No email on file — add one on the person page.'}${/\[[^\]]+\]/.test(d.body)?' · Fill in anything in [brackets].':''}</p>`);
@@ -1602,7 +1590,6 @@ function openDraft(pid, tpl, sel){
   mountDocs('ddocs', sel, () => { const r = withDocs($('#dbody').value, sel, blk); $('#dbody').value = r.body; blk = r.blk; });
   const cur = () => ({...d, subject:$('#dsub').value, body:$('#dbody').value});
   $('#ddoc').onclick = () => toGoogleDoc([cur()]);
-  $('#dout').onclick = () => { downloadEml(cur()); toast('Downloaded — open the file to get a ready-to-send Outlook message'); };
   $('#dcopy').onclick = async () => { const c = cur(); toast(await copyRich(bodyHtml(c.body), c.body) ? 'Copied' : 'Copy failed — select the text and copy manually'); };
 }
 

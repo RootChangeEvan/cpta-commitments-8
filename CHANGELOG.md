@@ -2,6 +2,13 @@
 
 Every deploy adds an entry here, newest first.
 
+## 2026-11-25 15:05 · Copy buttons per person (replaces Outlook files)
+
+**Updated:** `index.html`
+
+- Removed the Outlook .eml downloads (Mac Outlook opens them as received mail).
+- The review screen lists each draft with Copy address, Copy subject and Copy message buttons. The message copies with its formatting and links for pasting into a new email.
+
 ## 2026-11-25 14:55 · Email buttons on the Big Sur tab
 
 **Updated:** `index.html`
