@@ -247,6 +247,10 @@ ol.steps li{margin:10px 0}
 .docrow a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .docadd{display:grid;grid-template-columns:1fr 1.4fr auto;gap:6px;margin-top:10px}
 @media (max-width:640px){.docadd{grid-template-columns:1fr}}
+.cprow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.cprow span{min-width:0;overflow-wrap:anywhere}
+.cpbtn{flex:none}
+.cpbody{padding-top:4px}
 .docprev{border:1px solid var(--line);border-radius:8px;padding:4px 16px;background:var(--surface);font-size:14px}
 .docprev h1{font-size:18px;margin:12px 0}.docprev h2{font-size:16px;margin:14px 0 6px}.docprev hr{border:none;border-top:1px dashed var(--line-strong);margin:16px 0}
 details.group>summary{cursor:pointer;padding:8px 2px;list-style-position:inside}
@@ -1494,17 +1498,13 @@ async function copyRich(html, text){
   }
 }
 /* ===== Per-person copy: paste each email into a new message in any mail app ===== */
-function copyBlock(drafts){
-  return `<div class="hr"></div>
-    <h3 style="margin:4px 0 4px;font-size:15px">Copy each email</h3>
-    <p class="small muted" style="margin:0 0 8px">For each person: copy the address and subject into a new email, then copy the message and paste it into the body. The headings and document links come with it. When they’re sent, use <b>Mark as sent</b> above.</p>
-    <div class="list card">${drafts.map((d,i)=>`<div class="li small" style="align-items:center;flex-wrap:wrap;gap:8px">
-      <div class="grow" style="min-width:180px"><b>${esc(d.test?'Test copy for you':d.p.name)}</b><div class="tiny muted">${esc(d.p.email||'no email on file')}</div></div>
-      <div class="btns" style="gap:6px">
-        <button class="btn sm" data-cp="to" data-i="${i}" ${d.p.email?'':'disabled'}>Copy address</button>
-        <button class="btn sm" data-cp="subject" data-i="${i}">Copy subject</button>
-        <button class="btn sm primary" data-cp="body" data-i="${i}">Copy message</button>
-      </div></div>`).join('')}</div>`;
+function draftPreviewHtml(d, i){
+  const cb = (what, label, dis) => `<button type="button" class="btn sm cpbtn" data-cp="${what}" data-i="${i}" ${dis?'disabled':''}>${label}</button>`;
+  return `<h2>${esc(d.test?'Test copy for you':d.p.name)}${!d.test && d.p.org?` — ${esc(d.p.org)}`:''}</h2>
+    <div class="cprow"><span><b>To:</b> ${esc(d.p.email||'(no email on file)')}</span>${cb('to','Copy', !d.p.email)}</div>
+    <div class="cprow"><span><b>Subject:</b> ${esc(d.subject)}</span>${cb('subject','Copy')}</div>
+    <div class="cprow"><span><b>Message</b></span>${cb('body','Copy message')}</div>
+    <div class="cpbody">${bodyHtml(d.body)}</div>`;
 }
 function wireCopy(drafts){
   document.querySelectorAll('[data-cp]').forEach(b=>b.onclick = async () => {
@@ -1512,8 +1512,7 @@ function wireCopy(drafts){
     const ok = what==='body' ? await copyRich(bodyHtml(d.body), d.body)
              : await copyRich(esc(what==='to'?d.p.email:d.subject), what==='to'?d.p.email:d.subject);
     if(!ok) return toast('Couldn’t copy. Select the text in the preview and copy it by hand');
-    document.querySelectorAll(`[data-i="${b.dataset.i}"]`).forEach(x=>x.classList.remove('primary'));
-    b.textContent = '✓ ' + b.textContent.replace(/^✓ /,'');
+    b.textContent = '✓ Copied';
     toast(`${what==='body'?'Message':what==='to'?'Address':'Subject'} copied${what==='body'?' — paste it into the email body':''}`);
   });
 }
@@ -1545,10 +1544,9 @@ function toGoogleDoc(drafts, titleLine){
       <li class="small">Review and edit in the doc${hasBrackets?' — fill in anything in <b>[brackets]</b>':''}, then copy each email into your own mail and send it.</li>
       <li><button class="btn" id="hsent">Mark ${real>1?`all ${real}`:'it'} as sent</button> <span class="small muted">after you’ve sent ${real>1?'them':'it'}${real<n?' · the test copy isn\u2019t logged':''}${TEMPLATES[drafts[0].tpl].moves?' — moves untouched commitments to Reached out':''}</span></li>
     </ol>
-    ${copyBlock(drafts)}
     <div class="hr"></div>
-    <div class="small muted" style="margin-bottom:6px">Preview of what gets copied:</div>
-    <div class="docprev">${html}</div>`);
+    <div class="small muted" style="margin-bottom:6px">Or copy each email straight into a new message: use the <b>Copy</b> buttons beside the address, the subject and the message.</div>
+    <div class="docprev">${titleLine?`<h1>${esc(titleLine)}</h1>`:''}${drafts.map(draftPreviewHtml).join('<hr>')}</div>`);
   wireCopy(drafts);
   $('#hcopy').onclick = async () => {
     const ok = await copyRich(`<div>${html}</div>`, text);

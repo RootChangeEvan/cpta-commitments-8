@@ -2,6 +2,12 @@
 
 Every deploy adds an entry here, newest first.
 
+## 2026-11-25 15:10 · Copy buttons beside each line
+
+**Updated:** `index.html`
+
+- In the review preview, each person's email has Copy beside the address, Copy beside the subject, and Copy message for the body. The separate copy list is gone; the Google Doc copy is unchanged.
+
 ## 2026-11-25 15:05 · Copy buttons per person (replaces Outlook files)
 
 **Updated:** `index.html`
