@@ -2,6 +2,13 @@
 
 Every deploy adds an entry here, newest first.
 
+## 2026-11-25 14:40 · Open drafts in Outlook
+
+**Updated:** `index.html`
+
+- The review screen can download each draft as an Outlook email file (.eml, marked unsent), one at a time or all at once. Opening one in desktop Outlook gives a new, addressed message ready to review and send.
+- Single drafts have an Open in Outlook button. The review screen is now titled Review and send.
+
 ## 2026-11-25 14:30 · Test copy option for batch emails
 
 **Updated:** `index.html`
