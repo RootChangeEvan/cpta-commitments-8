@@ -945,7 +945,8 @@ function renderBigSur(){
 
   $('#main').innerHTML = `
     <div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-      <div><h2>${esc(ev.name||'Big Sur gathering')}</h2><div class="muted">${esc(ev.when_label||'')} · ${esc(ev.location||'')}</div></div>
+      <div><h2>${esc(ev.name||'Big Sur gathering')}</h2><div class="muted">${esc(ev.when_label||'')} · ${esc(ev.location||'')}</div>
+        <div class="btns" style="margin-top:12px"><button class="btn primary" onclick="openBatchDrafts('prearrival')">Email participants</button><button class="btn" onclick="openBatchDrafts('bigsur')">Invitation or reminder emails</button></div></div>
       ${days!==null?`<div class="countdown"><span class="n">${Math.max(days,0)}</span><span class="muted">${days>0?'days to go':days===0?'starts today':'days — it has started'}</span></div>`:''}
     </div>
     <div class="kpis section">

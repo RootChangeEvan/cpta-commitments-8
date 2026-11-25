@@ -2,6 +2,12 @@
 
 Every deploy adds an entry here, newest first.
 
+## 2026-11-25 14:55 · Email buttons on the Big Sur tab
+
+**Updated:** `index.html`
+
+- The Big Sur tab has Email participants (opens the pre-arrival batch) and Invitation or reminder emails (opens the Big Sur invitation batch).
+
 ## 2026-11-25 14:40 · Open drafts in Outlook
 
 **Updated:** `index.html`
